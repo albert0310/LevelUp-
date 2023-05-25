@@ -1,0 +1,13 @@
+{
+    "Lua.diagnostics.globals": [
+        "display",
+        "Runtime",
+        "system",
+        "value",
+        "native",
+        "graphics",
+        "physics",
+        "timer",
+        "transition"
+    ]
+}
