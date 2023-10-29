@@ -35,14 +35,7 @@ function M.new(Hero,world)
         height= 92,
         numFrames= 4
     })
-    local omega_slash_sheet = graphics.newImageSheet( "assets/main-character/skills/omega-slash.png", {
-        frames={
-            {
-                x = 1, y = 1,
-                width = 400, height = 320
-            }
-        }
-    })
+    
     local sequenceData = {
         {name = "idle",sheet = idle_sheet, frames = {1,2,3,4,5}, time = 1000, loopCount = 0},
         {name = "attack-1", sheet = attack_sheet, frames = {1, 2, 3, 4}, time = 150, loopCount = 1},
@@ -51,7 +44,7 @@ function M.new(Hero,world)
         {name = "walk", sheet = walk_sheet, frames = {1, 2, 3, 4}, time = 1000, loopCount = 0},
         {name = "dash", sheet = dash_sheet, frames = {1, 2}, time = 200, loopCount = 1},
         {name = "jump", sheet = jumping_sheet, frames = {1, 2, 3, 4}, time = 300, loopCount = 1},
-        {name = "omega_slash", sheet = omega_slash_sheet, frames={1}, timer = 1300, loopCount= 0}
+        --{name = "omega_slash", sheet = omega_slash_sheet, frames={1}, timer = 1300, loopCount= 0}
     }
     Hero = display.newSprite(parent, idle_sheet, sequenceData)
     Hero:setSequence("idle")
@@ -83,7 +76,7 @@ function M.new(Hero,world)
     local att_times = 0
     local function key(event)
         if(event.phase == lastMovement.phase) and (event.keyName == lastMovement.keyName) then return false end
-        if event.phase == "down" then
+        if event.phase == "down" and not parent.pause then
             if event.keyName == "left" or event.keyName == "a" then 
                 left = -acceleration
                 flip = -0.133
@@ -114,7 +107,7 @@ function M.new(Hero,world)
                 end
             end
         end
-        if event.phase == "up" then
+        if event.phase == "up" and not parent.pause then
             if "left" == event.keyName or "a" == event.keyName then 
                 left = 0
                 Hero:setSequence("idle")
@@ -228,42 +221,38 @@ function M.new(Hero,world)
             --end
         end
     end
-    local idle = {}
-    function idle:timer()
-        if not Hero.isPlaying then
-            Hero:setSequence("idle")
-            Hero:play()
-        end
-    end
+    
     --event per Frame
     
     local function enterFrame()
-        if Hero then
-            local vx,vy = Hero:getLinearVelocity()
-            local dx = left+right
-            if (dx < 0 and vx > -max) or (dx > 0 and vx < max) then
-                Hero:applyForce(dx or 0, 0, Hero.x, Hero.y)
-            end
-            Hero.xScale = math.min(1, math.max(Hero.xScale + flip, -1))
+        if not parent.pause then
+            if Hero then
+                local vx,vy = Hero:getLinearVelocity()
+                local dx = left+right
+                if (dx < 0 and vx > -max) or (dx > 0 and vx < max) then
+                    Hero:applyForce(dx or 0, 0, Hero.x, Hero.y)
+                end
+                Hero.xScale = math.min(1, math.max(Hero.xScale + flip, -1))
 
-            if Hero.sequence == "attack-1" or Hero.sequence == "attack-2" or Hero.sequence == "attack-3" then
-                Hero.timer = timer.performWithDelay( 200,function ()
-                    Hero:setSequence("idle")
-                    Hero:play()
-                end )
-            end 
-            if Hero.sequence == "dash" then
-                Hero.timer = timer.performWithDelay( 200,function ()
-                    Hero:setSequence("idle")
-                    Hero:play()
-                end )
-                Hero.dashing = false
-            end
-            if not Hero.dashBool then
-                Hero.dashCD = Hero.dashCD - 1
-                if Hero.dashCD <= 0 then
-                    Hero.dashCD = 400
-                    Hero.dashBool = true
+                if Hero.sequence == "attack-1" or Hero.sequence == "attack-2" or Hero.sequence == "attack-3" then
+                    Hero.timer = timer.performWithDelay( 200,function ()
+                        Hero:setSequence("idle")
+                        Hero:play()
+                    end )
+                end 
+                if Hero.sequence == "dash" then
+                    Hero.timer = timer.performWithDelay( 200,function ()
+                        Hero:setSequence("idle")
+                        Hero:play()
+                    end )
+                    Hero.dashing = false
+                end
+                if not Hero.dashBool then
+                    Hero.dashCD = Hero.dashCD - 1
+                    if Hero.dashCD <= 0 then
+                        Hero.dashCD = 400
+                        Hero.dashBool = true
+                    end
                 end
             end
         end

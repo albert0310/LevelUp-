@@ -8,6 +8,10 @@
         "graphics",
         "physics",
         "timer",
-        "transition"
+        "transition",
+        "lfs"
+    ],
+    "Lua.workspace.library": [
+        "${3rd}/lfs/library"
     ]
 }

@@ -320,65 +320,68 @@ function M.new(Enemy, type, hero)
 			Enemy:removeSelf()
 		end ]]
 		-- Do this every frame
-		if not Enemy.isDead and (Enemy.x < hero.x+400 and Enemy.x > hero.x-400) and (Enemy.y < hero.y+150 and Enemy.y > hero.y-150)then
-			local vx, vy = Enemy:getLinearVelocity()
-			local direction =  hero.x - Enemy.x
-			local left, right = 0, 0
-			if direction < 0 then
-				Enemy.flip = -0.133
-				left = -Enemy.acceleration 
-			elseif direction > 0 then
-				Enemy.flip = 0.133
-				right = Enemy.acceleration
-			end
-			local dx = left+right
-			if (dx < 0 and vx > -Enemy.max and Enemy.x > hero.x) or (dx > 0 and vx < Enemy.max and Enemy.x < hero.x )then
-				if Enemy.name == "buto" then
-					if not ((Enemy.x > hero.x-120 and Enemy.x < hero.x ) or (Enemy.x < hero.x+120 and Enemy.x > hero.x ))then
-						Enemy:applyForce(dx or 0, 0, Enemy.x, Enemy.y)
-					end
-				else
-					if not ((Enemy.x > hero.x-100 and Enemy.x < hero.x ) or (Enemy.x < hero.x+100 and Enemy.x > hero.x ))then
-						Enemy:applyForce(dx or 0, 0, Enemy.x, Enemy.y)
-					end
+		if not parent.pause then
+			if not Enemy.isDead and (Enemy.x < hero.x+400 and Enemy.x > hero.x-400) and (Enemy.y < hero.y+150 and Enemy.y > hero.y-150)then
+				local vx, vy = Enemy:getLinearVelocity()
+				local direction =  hero.x - Enemy.x
+				local left, right = 0, 0
+				if direction < 0 then
+					Enemy.flip = -0.133
+					left = -Enemy.acceleration 
+				elseif direction > 0 then
+					Enemy.flip = 0.133
+					right = Enemy.acceleration
 				end
-			end
-			Enemy.xScale = math.min(1, math.max(Enemy.xScale + Enemy.flip, -1))
-			--enemy attack
-			--print(Enemy.attackTimer)
-			if Enemy.attackTimer <= 0 then
-				if Enemy.name == "buto" then
-					if ( Enemy.x > hero.x-120 and Enemy.x < hero.x ) or (Enemy.x < hero.x+120 and Enemy.x > hero.x ) and (Enemy.y == hero.y)then
-						Enemy:attack()
-					end
-				else
-					if ( Enemy.x > hero.x-100 and Enemy.x < hero.x ) or (Enemy.x < hero.x+100 and Enemy.x > hero.x ) and (Enemy.y == hero.y) then
-						Enemy:attack()
+				local dx = left+right
+				if (dx < 0 and vx > -Enemy.max and Enemy.x > hero.x) or (dx > 0 and vx < Enemy.max and Enemy.x < hero.x )then
+					if Enemy.name == "buto" then
+						if not ((Enemy.x > hero.x-120 and Enemy.x < hero.x ) or (Enemy.x < hero.x+120 and Enemy.x > hero.x ))then
+							Enemy:applyForce(dx or 0, 0, Enemy.x, Enemy.y)
+						end
+					else
+						if not ((Enemy.x > hero.x-100 and Enemy.x < hero.x ) or (Enemy.x < hero.x+100 and Enemy.x > hero.x ))then
+							Enemy:applyForce(dx or 0, 0, Enemy.x, Enemy.y)
+						end
 					end
 				end
-			end
-			--print(Enemy.x .. " - " .. hero.x .. " - " .. vx )
-			if Enemy.sequence == "attack" and not Enemy == nil then
-				
-			end
-			if vx == 0 then
-				--print("lol")
-				if Enemy.sequence == "walk" and Enemy then
-					Enemy:setSequence("idle")
-					Enemy:play()
+				Enemy.xScale = math.min(1, math.max(Enemy.xScale + Enemy.flip, -1))
+				--enemy attack
+				--print(Enemy.attackTimer)
+				if Enemy.attackTimer <= 0 then
+					if Enemy.name == "buto" then
+						if ( (Enemy.x - 120 < hero.x and Enemy.x > hero.x) or (Enemy.x + 120 > hero.x and Enemy.x < hero.x)) then
+							Enemy:attack()
+						end
+					else
+						if ( (Enemy.x - 100 < hero.x and Enemy.x > hero.x) or (Enemy.x + 100 > hero.x and Enemy.x < hero.x)) then
+							Enemy:attack()
+						end
+					end
 				end
-				
-			end
-			if vx ~= 0 then
-				--print("ok")
-				if Enemy.sequence == "idle" and Enemy then
-					Enemy:setSequence("walk")
-					Enemy:play()
+				--print(Enemy.x .. " - " .. hero.x)
+				if Enemy.sequence == "attack" and not Enemy == nil then
+					
 				end
+				if vx == 0 then
+					--print("lol")
+					if Enemy.sequence == "walk" and Enemy then
+						Enemy:setSequence("idle")
+						Enemy:play()
+					end
+					
+				end
+				if vx ~= 0 then
+					--print("ok")
+					if Enemy.sequence == "idle" and Enemy then
+						Enemy:setSequence("walk")
+						Enemy:play()
+					end
+				end
+				Enemy.attackTimer = Enemy.attackTimer - 1
+			
 			end
-			Enemy.attackTimer = Enemy.attackTimer - 1
-		
 		end
+		
 	end
 
 	Enemy.attacking = false
