@@ -31,32 +31,111 @@ local world, hero,skill, musuh, wall, BG, blockade, boss, decor, healthbar
 local back,right,left,attack,jump ,dash ,skil1,skil2,skil3,skil4,skil5 
 local enemies = {}
 local bblood = true
+local textS = ""
+local textB = ""
+local ssound = true
 -- Groups
 local _grpMain
-
+local _pauseGroup
 -- Sounds
 
 
 --
 -- Local functions
+
+
+local function removepauseMenu()
+    print (_pauseGroup.numChildren)
+
+    for i = _pauseGroup.numChildren , 1 , -1 do
+        display.remove(_pauseGroup[i])
+    end
+
+    world.pause = false
+end
+
+local function resume( event )
+    if(event.phase == "ended" ) then
+        removepauseMenu()
+    end
+    return true 
+end
+
+local function sound()
+    
+end
+local function blood(event)
+    if(event.phase == "ended" ) then
+        if bblood == true then
+            bblood = false
+        else 
+            bblood = true
+        end
+        print(bblood)
+
+        if bblood == false then
+            textB = "Off"
+        else
+            textB = "On"
+        end
+        print(textB)
+        local txtBloodOnoff = display.newText( _pauseGroup, textB, 450, 155, "assets/fonts/Shadow of the Deads.ttf", 15)
+        txtBloodOnoff.fill = {color.hex2rgb("#dba400")}
+        _pauseGroup[4] = txtBloodOnoff
+    end
+end
+
 local function goBack()
+    removepauseMenu()
     fx.fadeOut( function()
         composer.gotoScene( "scenes.menu")
     end )
 end
-local function resume()
-    print(world.pause)
-    print("before resume")
-    world.pause = not world.pause
-    print(world.pause)
-    print("after resume")
-end
-local function sound()
+
+local function createpauseMenu()
+    print "createpause"
+
+    local pausemenu = display.newImage( _pauseGroup,"assets/menu/pausemenu.png", 180, 180)
+    pausemenu.x, pausemenu.y =  400, 150
     
+    local txtSound = display.newText(_pauseGroup, "Sound" , 350, 120, "assets/fonts/Shadow of the Deads.ttf", 15)
+    txtSound.fill = {color.hex2rgb("#dba400")}
+
+    if bblood  then
+        textS = "On"
+    else
+        textS = "Off" 
+    end
+    local txtSoundOnOff = display.newText(_pauseGroup, textS, 450, 120, "assets/fonts/Shadow of the Deads.ttf", 15)
+    txtSoundOnOff.fill = {color.hex2rgb("#dba400")}
+
+    local txtBlood = display.newText(_pauseGroup, "Blood ", 347, 155, "assets/fonts/Shadow of the Deads.ttf", 15)
+    txtBlood.fill = {color.hex2rgb("#dba400")}
+
+    if bblood  then
+        textB = "On"
+    else
+        textB = "Off" 
+    end
+    local txtBloodOnoff = display.newText( _pauseGroup, textB, 450, 155, "assets/fonts/Shadow of the Deads.ttf", 15)
+    txtBloodOnoff.fill = {color.hex2rgb("#dba400")}
+
+    local txtResume = display.newText( _pauseGroup ,"Resume ", 362, 190, "assets/fonts/Shadow of the Deads.ttf", 15)
+    txtResume.fill = {color.hex2rgb("#dba400")}
+
+    local txtBack = display.newText( _pauseGroup, "Back", 342, 225, "assets/fonts/Shadow of the Deads.ttf", 15)
+    txtBack.fill = {color.hex2rgb("#dba400")}
+
+    txtBlood:addEventListener("touch", blood)
+    txtResume:addEventListener("touch", resume)
+    txtSound:addEventListener("tap", sound)
+    txtBack:addEventListener("tap", goBack)
+
+    world.pause = true
 end
-local function blood()
-    bblood = not bblood
-end
+
+
+
 local function dead(x,y)
     if bblood then
         for i = 0, 20, 1 do
@@ -79,6 +158,7 @@ function scene:create( event )
     physics.start()
 
     BG = display.newGroup()
+    _pauseGroup = display.newGroup()
 
     local background = display.newRect(BG , _CX, _CY,  display.pixelWidth, display.pixelHeight)
     background.fill =  {color.hex2rgb("191c54")}
@@ -92,7 +172,7 @@ function scene:create( event )
     local isSimulator = "simulator" == system.getInfo( "environment" )
     local isMobile = ( "ios" == system.getInfo("platform") ) or ( "android" == system.getInfo("platform") )
     if isMobile or isSimulator then
-        local back = vjoy.newButton(60 , "back", sceneGroup)
+        local back = vjoy.newButton("assets/menu/setting.png" , "back", sceneGroup)
         local right = vjoy.newButton( 60, "right", sceneGroup )
         local left = vjoy.newButton( 60, "left" , sceneGroup)
         local attack = vjoy.newButton("assets/menu/attack-button.png", "attack", sceneGroup)
@@ -304,47 +384,13 @@ function scene:create( event )
                 end
             end
             if event.keyName == "back" or event.keyName == "escape" then
-                world.pause = true
-                local pausemenu = display.newImage( sceneGroup,"assets/menu/pause-menu.png", 180, 180)
-                pausemenu.x, pausemenu.y = 400, 150
-                
-                local txtSound = display.newText("Sound ", 350, 120, "assets/fonts/Shadow of the Deads.ttf", 15)
-                txtSound.fill = {color.hex2rgb("#dba400")}
-
-                local txtSoundOnOff = display.newText("Off ", 450, 120, "assets/fonts/Shadow of the Deads.ttf", 15)
-                txtSoundOnOff.fill = {color.hex2rgb("#dba400")}
-
-                local txtBlood = display.newText("Blood ", 347, 155, "assets/fonts/Shadow of the Deads.ttf", 15)
-                txtBlood.fill = {color.hex2rgb("#dba400")}
-
-                local txtBloodOnoff = display.newText("On ", 450, 155, "assets/fonts/Shadow of the Deads.ttf", 15)
-                txtBloodOnoff.fill = {color.hex2rgb("#dba400")}
-
-                local txtResume = display.newText("Resume ", 362, 190, "assets/fonts/Shadow of the Deads.ttf", 15)
-                txtResume.fill = {color.hex2rgb("#dba400")}
-
-                local txtBack = display.newText("Back", 342, 225, "assets/fonts/Shadow of the Deads.ttf", 15)
-                txtBack.fill = {color.hex2rgb("#dba400")}
-
-                txtBlood:addEventListener("tap", blood)
-                txtResume:addEventListener("tap", resume)
-                txtSound:addEventListener("tap", sound)
-                txtBack:addEventListener("tap", goBack)
-
                 print(world.pause)
-                print("in the event")
-                if not world.pause then
-                    pausemenu = nil
-                    txtBack:removeEventListener("tap")
-                    txtBlood:removeEventListener("tap")
-                    txtSound:removeEventListener("tap")
-                    txtResume:removeEventListener("tap")
-                    display.remove(pausemenu)
-                    display.remove(txtBack)
-                    display.remove(txtBlood)
-                    display.remove(txtSound)
-                    display.remove(txtResume)
+                if world.pause then
+                    removepauseMenu()
+                else
+                    createpauseMenu()
                 end
+                return true
             end
         end
     end 
