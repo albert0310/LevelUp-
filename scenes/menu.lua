@@ -7,7 +7,12 @@ local color = require "com.ponywolf.ponycolor"
 
 --
 -- Set variables
-
+if composer.getVariable("bloodOnOff") == nil then
+    composer.setVariable("bloodOnOff", true)
+end
+if composer.getVariable("soundOnOff") == nil then
+    composer.setVariable("soundOnOff", true)
+end
 -- Layout
 local _W, _H, _CX, _CY = relayout._W, relayout._H, relayout._CX, relayout._CY 
 
@@ -18,7 +23,7 @@ local scene = composer.newScene()
 local _grpMain
 
 -- Sounds
-
+local musicTrack
 
 --
 -- Local functions
@@ -28,14 +33,19 @@ end
 local function gotoStory()
     composer.gotoScene("scenes.stage-menu")
 end
-
+local function gotoHighScore()
+    composer.gotoScene("scenes.highscore")
+end
+local function gotoSetting()
+    composer.gotoScene("scenes.settings")
+end
 --
 -- Scene events functions
 
 function scene:create( event )
 
     print("scene:create - menu")
-
+    print(tostring(composer.getVariable("soundOnOff")))
     _grpMain = display.newGroup()
 
     self.view:insert(_grpMain)
@@ -66,7 +76,7 @@ function scene:create( event )
 
     local btnLead = display.newImageRect(_grpMain, "assets/menu/button.png", 150, 35)
     btnLead.x , btnLead.y= _CX, _CY + 70 
-    local txtLead = display.newText("Leaderboard", _CX, _CY + 70, "assets/fonts/Shadow of the Deads.ttf", 10)
+    local txtLead = display.newText("Highscore", _CX, _CY + 70, "assets/fonts/Shadow of the Deads.ttf", 10)
     txtLead.fill = {color.hex2rgb("#dba400")}
     _grpMain:insert(txtLead)
 
@@ -75,12 +85,20 @@ function scene:create( event )
     
     btnPlay:addEventListener("tap", gotoGame)
     btnStory:addEventListener("tap", gotoStory)
+    btnLead:addEventListener("tap", gotoHighScore)
+    btnSettings:addEventListener("tap", gotoSetting)
+
+    musicTrack = audio.loadStream( "assets/sound/backsound.wav")
 end
 
 function scene:show( event )
 
     if ( event.phase == "will" ) then
     elseif ( event.phase == "did" ) then
+        if composer.getVariable("soundOnOff") then
+            audio.play(musicTrack, {channel=1, loops = -1})
+            composer.setVariable("musicTrack",musicTrack)
+        end
     end
 end
 

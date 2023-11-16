@@ -15,5 +15,7 @@ end
 
 system.activate("multitouch")
 
+audio.reserveChannels( 1 )
+audio.setVolume( 0.2, { channel=1 } )
 
 composer.gotoScene( "scenes.menu" )

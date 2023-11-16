@@ -30,10 +30,14 @@ local terrain, terrainCount, spawnTerrain = {}, 1
 local world, hero,skill, musuh, wall, BG, blockade, boss, decor, healthbar
 local back,right,left,attack,jump ,dash ,skil1,skil2,skil3,skil4,skil5 
 local enemies = {}
-local bblood = true
+local bblood = composer.getVariable("bloodOnOff")
 local textS = ""
 local textB = ""
-local ssound = true
+local bsound = composer.getVariable("soundOnOff")
+local diessound, slashsound
+--buttons
+local back,right,left,attack,jump,dash,skill1,skill2,skill3,skill4,skill5 
+
 -- Groups
 local _grpMain
 local _pauseGroup
@@ -61,8 +65,33 @@ local function resume( event )
     return true 
 end
 
-local function sound()
-    
+local function sound(event)
+    if(event.phase == "ended" ) then
+        if bsound == true then
+            bsound = false
+            audio.stop(1)
+        else 
+            bsound = true
+            local musicTrack = composer.getVariable("musicTrack")
+            audio.play(musicTrack, {channel=1, loops = -1})
+        end
+
+        if bsound == false then
+            textS = "Off"
+        else
+            textS = "On"
+        end
+        composer.setVariable("soundOnOff", bsound)
+        for i = 1, _pauseGroup.numChildren, 1 do
+            if _pauseGroup[i].name == "txtSoundOnOff" then
+                _pauseGroup[i]:removeSelf()
+                local txtSoundOnOff = display.newText(textS, 450, 120, "assets/fonts/Shadow of the Deads.ttf", 15)
+                txtSoundOnOff.fill = {color.hex2rgb("#dba400")}
+                txtSoundOnOff.name = "txtSoundOnOff"
+                _pauseGroup:insert(txtSoundOnOff)
+            end
+        end
+    end
 end
 local function blood(event)
     if(event.phase == "ended" ) then
@@ -71,17 +100,22 @@ local function blood(event)
         else 
             bblood = true
         end
-        print(bblood)
 
         if bblood == false then
             textB = "Off"
         else
             textB = "On"
         end
-        print(textB)
-        local txtBloodOnoff = display.newText( _pauseGroup, textB, 450, 155, "assets/fonts/Shadow of the Deads.ttf", 15)
-        txtBloodOnoff.fill = {color.hex2rgb("#dba400")}
-        _pauseGroup[4] = txtBloodOnoff
+        composer.setVariable("bloodOnOff", bblood)
+        for i = 1, _pauseGroup.numChildren, 1 do
+            if _pauseGroup[i].name == "txtBloodOnoff" then
+                _pauseGroup[i]:removeSelf()
+                local txtBloodOnoff = display.newText(textB, 450, 155, "assets/fonts/Shadow of the Deads.ttf", 15)
+                txtBloodOnoff.fill = {color.hex2rgb("#dba400")}
+                txtBloodOnoff.name = "txtBloodOnoff"
+                _pauseGroup:insert(txtBloodOnoff)
+            end
+        end
     end
 end
 
@@ -101,24 +135,28 @@ local function createpauseMenu()
     local txtSound = display.newText(_pauseGroup, "Sound" , 350, 120, "assets/fonts/Shadow of the Deads.ttf", 15)
     txtSound.fill = {color.hex2rgb("#dba400")}
 
-    if bblood  then
+    if bsound  then
         textS = "On"
     else
         textS = "Off" 
     end
-    local txtSoundOnOff = display.newText(_pauseGroup, textS, 450, 120, "assets/fonts/Shadow of the Deads.ttf", 15)
+    local txtSoundOnOff = display.newText(textS, 450, 120, "assets/fonts/Shadow of the Deads.ttf", 15)
     txtSoundOnOff.fill = {color.hex2rgb("#dba400")}
+    txtSoundOnOff.name = "txtSoundOnOff"
+    _pauseGroup:insert(txtSoundOnOff)
 
     local txtBlood = display.newText(_pauseGroup, "Blood ", 347, 155, "assets/fonts/Shadow of the Deads.ttf", 15)
     txtBlood.fill = {color.hex2rgb("#dba400")}
 
-    if bblood  then
+    if bblood then
         textB = "On"
     else
         textB = "Off" 
     end
-    local txtBloodOnoff = display.newText( _pauseGroup, textB, 450, 155, "assets/fonts/Shadow of the Deads.ttf", 15)
+    local txtBloodOnoff = display.newText( textB, 450, 155, "assets/fonts/Shadow of the Deads.ttf", 15)
     txtBloodOnoff.fill = {color.hex2rgb("#dba400")}
+    txtBloodOnoff.name = "txtBloodOnoff"
+    _pauseGroup:insert(txtBloodOnoff)
 
     local txtResume = display.newText( _pauseGroup ,"Resume ", 362, 190, "assets/fonts/Shadow of the Deads.ttf", 15)
     txtResume.fill = {color.hex2rgb("#dba400")}
@@ -128,16 +166,17 @@ local function createpauseMenu()
 
     txtBlood:addEventListener("touch", blood)
     txtResume:addEventListener("touch", resume)
-    txtSound:addEventListener("tap", sound)
+    txtSound:addEventListener("touch", sound)
     txtBack:addEventListener("tap", goBack)
 
     world.pause = true
 end
 
-
-
 local function dead(x,y)
     if bblood then
+        if bsound then
+            audio.play(diessound)
+        end
         for i = 0, 20, 1 do
             local radius = math.random(1, 10)
             local blood = display.newCircle(world, x, y, radius)
@@ -149,7 +188,195 @@ local function dead(x,y)
     end
 end
 
+local function slashingsound()
+    if bsound then
+        audio.play(slashsound)
+    end
+end
+
+--skill functions
+
+local function megaslash()
+    if hero.megaslashBool then
+        hero.megaslash()
+        skill.megaslash()
+        for index, value in ipairs(enemies) do
+            --print( value.type .. " - " .. value.x .. " - " .. value.y)
+            --print( hero.x .. " - " .. hero.y)
+            --json.prettify( hero )
+            --json.prettify( enemies )
+            if value.type == "enemy" and value.isDead ~= true then
+                if hero.direction == "right" then
+                    if value.x >= hero.x and value.x < hero.x+150  then
+                        print("damage" .. hero.damage*1.8)
+                        print("level" .. hero.level)
+                        value:hurt(hero.damage*1.8)
+                        if value.hp <= 0 then
+                            hero:kill(value.name)
+                            dead(value.x, value.y)
+                            value.isDead = true
+                        end
+                    end
+                else
+                    if value.x <= hero.x and value.x > hero.x-150  then
+                        print("damage" .. hero.damage*1.8)
+                        print("level" .. hero.level)
+                        value:hurt(hero.damage*1.8)
+                        if value.hp <= 0 then
+                            hero:kill(value.name)
+                            dead(value.x, value.y)
+                            value.isDead = true
+                        end
+                    end
+                end
+                
+            end
+        end
+        if boss and boss.isDead ~= true then
+            if hero.direction == "right" then
+                if boss and (boss.x >= hero.x and boss.x < hero.x+150)  then
+                    boss:hurt(hero.damage)
+                    if boss.isDead then
+                        boss.isVisible = false
+                        fx.fadeOut( function()
+                            composer.gotoScene( "scenes.menu")
+                        end )
+                    end
+                end
+            else
+                if boss and (boss.x <= hero.x and boss.x > hero.x-150)  then
+                    boss:hurt(hero.damage)
+                    if boss.isDead then
+                        boss.isVisible = false
+                        fx.fadeOut( function()
+                            composer.gotoScene( "scenes.menu")
+                        end )
+                    end
+                end
+            end
+        end
+    end
+end
+
+local function earthshatter()
+    if hero.earthshatterBool then
+        hero.earthshatter()
+        skill.earthshatter()
+        
+        for index, value in ipairs(enemies) do
+            if value.type == "enemy" and value.isDead ~= true then
+                if hero.direction == "right" then
+                    if value.x >= hero.x + 90 and value.x < hero.x+190  then
+                        print("damage" .. hero.damage*2)
+                        print("level" .. hero.level)
+                        value:hurt(hero.damage*2)
+                        if value.hp <= 0 then
+                            hero:kill(value.name)
+                            dead(value.x, value.y)
+                            value.isDead = true
+                        end
+                    end
+                else
+                    if value.x <= hero.x - 90 and value.x > hero.x-190  then
+                        print("damage" .. hero.damage*1.8)
+                        print("level" .. hero.level)
+                        value:hurt(hero.damage*1.8)
+                        if value.hp <= 0 then
+                            hero:kill(value.name)
+                            dead(value.x, value.y)
+                            value.isDead = true
+                        end
+                    end
+                end
+                
+            end
+        end
+        if boss and boss.isDead ~= true then
+            if hero.direction == "right" then
+                if boss and (boss.x >= hero.x + 90 and boss.x < hero.x+190)  then
+                    boss:hurt(hero.damage)
+                    if boss.isDead then
+                        boss.isVisible = false
+                        fx.fadeOut( function()
+                            composer.gotoScene( "scenes.menu")
+                        end )
+                    end
+                end
+            else
+                if boss and (boss.x <= hero.x - 90 and boss.x > hero.x-190)  then
+                    boss:hurt(hero.damage)
+                    if boss.isDead then
+                        boss.isVisible = false
+                        fx.fadeOut( function()
+                            composer.gotoScene( "scenes.menu")
+                        end )
+                    end
+                end
+            end
+        end
+    end
+    
+end
+
+local function omnislash()
+    if hero.omnislashBool then
+        hero.omnislash()
+        skill.omnislash()
+        for index, value in ipairs(enemies) do
+            if value.type == "enemy" and value.isDead ~= true then
+                if hero.direction == "right" then
+                    if value.x >= hero.x - 50 and value.x < hero.x+250  then
+                        print("damage" .. hero.damage*2)
+                        print("level" .. hero.level)
+                        value:hurt(hero.damage*2)
+                        if value.hp <= 0 then
+                            hero:kill(value.name)
+                            dead(value.x, value.y)
+                            value.isDead = true
+                        end
+                    end
+                else
+                    if value.x <= hero.x + 50 and value.x > hero.x-250  then
+                        print("damage" .. hero.damage*1.8)
+                        print("level" .. hero.level)
+                        value:hurt(hero.damage*1.8)
+                        if value.hp <= 0 then
+                            hero:kill(value.name)
+                            dead(value.x, value.y)
+                            value.isDead = true
+                        end
+                    end
+                end
+                
+            end
+        end
+        if boss and boss.isDead ~= true then
+            if hero.direction == "right" then
+                if boss and (boss.x >= hero.x - 50 and boss.x < hero.x +250)  then
+                    boss:hurt(hero.damage)
+                    if boss.isDead then
+                        boss.isVisible = false
+                        fx.fadeOut( function()
+                            composer.gotoScene( "scenes.menu")
+                        end )
+                    end
+                end
+            else
+                if boss and (boss.x <= hero.x + 50 and boss.x > hero.x-250)  then
+                    boss:hurt(hero.damage)
+                    if boss.isDead then
+                        boss.isVisible = false
+                        fx.fadeOut( function()
+                            composer.gotoScene( "scenes.menu")
+                        end )
+                    end
+                end
+            end
+        end
+    end
+end
 --
+
 -- Scene events functions
 
 function scene:create( event )
@@ -172,38 +399,41 @@ function scene:create( event )
     local isSimulator = "simulator" == system.getInfo( "environment" )
     local isMobile = ( "ios" == system.getInfo("platform") ) or ( "android" == system.getInfo("platform") )
     if isMobile or isSimulator then
-        local back = vjoy.newButton("assets/menu/setting.png" , "back", sceneGroup)
-        local right = vjoy.newButton( 60, "right", sceneGroup )
-        local left = vjoy.newButton( 60, "left" , sceneGroup)
-        local attack = vjoy.newButton("assets/menu/attack-button.png", "attack", sceneGroup)
-        local jump = vjoy.newButton("assets/main-character/skills/jump.png", "jump", sceneGroup)
-        local dash = vjoy.newButton("assets/main-character/skills/dash.png", "dash", sceneGroup)
-        local skil1 = vjoy.newButton("assets/main-character/skills/mega-slash.png", "skill1", sceneGroup)
-        local skil2 = vjoy.newButton("assets/main-character/skills/locked.png", "skill2", sceneGroup)
-        local skil3 = vjoy.newButton("assets/main-character/skills/locked.png", "skill3", sceneGroup)
-        local skil4 = vjoy.newButton("assets/main-character/skills/locked.png", "skill4", sceneGroup)
-        local skil5 = vjoy.newButton("assets/main-character/skills/locked.png", "skill5", sceneGroup)
+        back = vjoy.newButton("assets/menu/setting.png" , "back", sceneGroup)
+        right = vjoy.newButton( 60, "right", sceneGroup )
+        left = vjoy.newButton( 60, "left" , sceneGroup)
+        attack = vjoy.newButton("assets/menu/attack-button.png", "attack", sceneGroup)
+        jump = vjoy.newButton("assets/main-character/skills/jump.png", "jump", sceneGroup)
+        dash = vjoy.newButton("assets/main-character/skills/dash.png", "dash", sceneGroup)
+        skill1 = vjoy.newButton("assets/main-character/skills/mega-slash.png", "skill1", sceneGroup)
+        skill1.name = "megaslash"
+        skill2 = vjoy.newButton("assets/main-character/skills/earth-shatter-icon.png", "skill2", sceneGroup)
+        skill2.name = "earthshatter"
+        skill3 = vjoy.newButton("assets/main-character/skills/omnislash.png", "skill3", sceneGroup)
+        skill3.name = "omnislash"
+        skill4 = vjoy.newButton("assets/main-character/skills/locked.png", "skill4", sceneGroup)
+        skill5 = vjoy.newButton("assets/main-character/skills/locked.png", "skill5", sceneGroup)
         --position
         back.x,back.y = display.actualContentWidth - 50 , 50
         attack.x,attack.y = display.actualContentWidth - 50 , _CY + 130
         dash.x,dash.y = display.actualContentWidth - 30 , _CY + 60
         jump.x,jump.y = display.actualContentWidth - 80 , _CY + 70
-        skil1.x,skil1.y = display.actualContentWidth - 115 , _CY + 105
-        skil2.x, skil2.y = display.actualContentWidth - 130 , _CY + 150
-        skil3.x, skil3.y = display.actualContentWidth - 160 , _CY + 105
-        skil4.x, skil4.y = display.actualContentWidth - 175 , _CY + 150
-        skil5.x, skil5.y = display.actualContentWidth - 220 , _CY + 150
+        skill1.x,skill1.y = display.actualContentWidth - 115 , _CY + 105
+        skill2.x, skill2.y = display.actualContentWidth - 130 , _CY + 150
+        skill3.x, skill3.y = display.actualContentWidth - 160 , _CY + 105
+        skill4.x, skill4.y = display.actualContentWidth - 175 , _CY + 150
+        skill5.x, skill5.y = display.actualContentWidth - 220 , _CY + 150
         right.x, right.y = display.screenOriginX + 130, display.screenOriginY + display.contentHeight - 40
         left.x, left.y =  display.screenOriginX + 70,display.screenOriginY + display.contentHeight - 40  
         --scale
         back.xScale, back.yScale = 0.4, 0.4
         jump.xScale, jump.yScale = 0.8, 0.8
         dash.xScale, dash.yScale = 0.8, 0.8
-        skil1.xScale, skil1.yScale = 0.8, 0.8
-        skil2.xScale, skil2.yScale = 0.8, 0.8
-        skil3.xScale, skil3.yScale = 0.8, 0.8
-        skil4.xScale, skil4.yScale = 0.8, 0.8
-        skil5.xScale, skil5.yScale = 0.8, 0.8
+        skill1.xScale, skill1.yScale = 0.8, 0.8
+        skill2.xScale, skill2.yScale = 0.8, 0.8
+        skill3.xScale, skill3.yScale = 0.8, 0.8
+        skill4.xScale, skill4.yScale = 0.8, 0.8
+        skill5.xScale, skill5.yScale = 0.8, 0.8
         attack.xScale, attack.yScale = 1, 1
         right.xScale, right.yScale = 0.3 , 0.3
         left.xScale, left.yScale = 0.3, 0.3
@@ -219,8 +449,7 @@ function scene:create( event )
     --player
     hero = heroes.new(hero,world)
     skill = skills.new(skill, hero, world)
-    skill.CD = 400
-    skill.CDtemp = 400
+
     --healthbar
     healthbar = health.new(hero, sceneGroup)
 
@@ -274,9 +503,10 @@ function scene:create( event )
                     --print( hero.x .. " - " .. hero.y)
                     json.prettify( hero )
                     json.prettify( enemies )
-                    if value.type == "enemy" and index ~= temp and value.isDead ~= true then
+                    if value.type == "enemy" and value.isDead ~= true then
                         if hero.direction == "right" then
                             if value.x >= hero.x and value.x < hero.x+120  then
+                                slashingsound()
                                 print("damage" .. hero.damage)
                                 print("level" .. hero.level)
                                 value:hurt(hero.damage)
@@ -288,6 +518,7 @@ function scene:create( event )
                             end
                         else
                             if value.x <= hero.x and value.x > hero.x-120  then
+                                slashingsound()
                                 print("damage" .. hero.damage)
                                 print("level" .. hero.level)
                                 value:hurt(hero.damage)
@@ -304,6 +535,7 @@ function scene:create( event )
                 if boss and boss.isDead ~= true then
                     if hero.direction == "right" then
                         if boss and (boss.x >= hero.x and boss.x < hero.x+120)  then
+                            slashingsound()
                             boss:hurt(hero.damage)
                             if boss.isDead then
                                 boss.isVisible = false
@@ -314,6 +546,7 @@ function scene:create( event )
                         end
                     else
                         if boss and (boss.x <= hero.x and boss.x > hero.x-120)  then
+                            slashingsound()
                             boss:hurt(hero.damage)
                             if boss.isDead then
                                 boss.isVisible = false
@@ -326,61 +559,34 @@ function scene:create( event )
                 end
             end
             --skills
-            if event.keyName == "attack" or event.keyName == "t" then
-                for index, value in ipairs(enemies) do
-                    --print( value.type .. " - " .. value.x .. " - " .. value.y)
-                    --print( hero.x .. " - " .. hero.y)
-                    json.prettify( hero )
-                    json.prettify( enemies )
-                    if value.type == "enemy" and index ~= temp and value.isDead ~= true then
-                        if hero.direction == "right" then
-                            if value.x >= hero.x and value.x < hero.x+120  then
-                                print("damage" .. hero.damage)
-                                print("level" .. hero.level)
-                                value:hurt(hero.damage)
-                                if value.hp <= 0 then
-                                    hero:kill(value.name)
-                                    dead(value.x, value.y)
-                                    value.isDead = true
-                                end
-                            end
-                        else
-                            if value.x <= hero.x and value.x > hero.x-120  then
-                                print("damage" .. hero.damage)
-                                print("level" .. hero.level)
-                                value:hurt(hero.damage)
-                                if value.hp <= 0 then
-                                    hero:kill(value.name)
-                                    dead(value.x, value.y)
-                                    value.isDead = true
-                                end
-                            end
-                        end
-                        
-                    end
+            if event.keyName == "skill1" or event.keyName == "t" then
+                print(hero.direction)
+                if skill1.name == "megaslash"  then
+                    megaslash()
+                elseif skill1.name == "omnislash" then
+                    omnislash()
+                elseif skill1.name == "earthshatter" then
+                    earthshatter()
                 end
-                if boss and boss.isDead ~= true then
-                    if hero.direction == "right" then
-                        if boss and (boss.x >= hero.x and boss.x < hero.x+120)  then
-                            boss:hurt(hero.damage)
-                            if boss.isDead then
-                                boss.isVisible = false
-                                fx.fadeOut( function()
-                                    composer.gotoScene( "scenes.menu")
-                                end )
-                            end
-                        end
-                    else
-                        if boss and (boss.x <= hero.x and boss.x > hero.x-120)  then
-                            boss:hurt(hero.damage)
-                            if boss.isDead then
-                                boss.isVisible = false
-                                fx.fadeOut( function()
-                                    composer.gotoScene( "scenes.menu")
-                                end )
-                            end
-                        end
-                    end
+            end
+            if event.keyName == "skill2" or event.keyName == "t" then
+                print(hero.direction)
+                if skill2.name == "megaslash" then
+                    megaslash()
+                elseif skill2.name == "omnislash" then
+                    omnislash()
+                elseif skill2.name == "earthshatter" then
+                    earthshatter()
+                end
+            end
+            if event.keyName == "skill3" or event.keyName == "t" then
+                print(hero.direction)
+                if skill3.name == "megaslash" then
+                    megaslash()
+                elseif skill3.name == "omnislash" then
+                    omnislash()
+                elseif skill3.name == "earthshatter" then
+                    earthshatter()
                 end
             end
             if event.keyName == "back" or event.keyName == "escape" then
@@ -395,29 +601,8 @@ function scene:create( event )
         end
     end 
 
-    
-    --
-    --local uniqueskill = display.newImage( sceneGroup,"assets/menu/unique-skill.png", 150, 180)
-    --uniqueskill.x, uniqueskill.y = 400, 180
-    --local uniqueskillicon = display.newImage( sceneGroup,"assets/main-character/skills/multi-slash.png")
-    --uniqueskillicon.x, uniqueskillicon.y = 400, 160
-    --local uniqueskillTxt = display.newText("Multi Slash ", 400, 210, "assets/fonts/Shadow of the Deads.ttf", 10)
-    --uniqueskillTxt.fill = {color.hex2rgb("#dba400")}
---
-    --local commonskill = display.newImage( sceneGroup,"assets/menu/common-skill.png", 150, 180)
-    --commonskill.x, commonskill.y = 200, 180
-    --local commonskillIcon = display.newImage( sceneGroup,"assets/main-character/skills/mega-slash.png")
-    --commonskillIcon.x, commonskillIcon.y = 200, 160
-    --local commonskillTxt = display.newText("Mega Slash ", 200, 210, "assets/fonts/Shadow of the Deads.ttf", 10)
-    --commonskillTxt.fill = {color.hex2rgb("#dba400")}
---
-    --local rareskill = display.newImage( sceneGroup, "assets/menu/rare-skill.png", 150, 180)
-    --rareskill.x, rareskill.y = 600, 180
-    --local rareskillIcon = display.newImage( sceneGroup,"assets/main-character/skills/earth-shatter-icon.png")
-    --rareskillIcon.x, rareskillIcon.y = 600, 160
-    --local rareskillTxt = display.newText("Earth Shatter", 600, 210, "assets/fonts/Shadow of the Deads.ttf", 10)
-    --rareskillTxt.fill = {color.hex2rgb("#dba400")}
-    --
+    slashsound = audio.loadSound("assets/sound/slash.mp3")
+    diessound = audio.loadSound("assets/sound/dies.wav")
 
     Runtime:addEventListener("key",key)
 end

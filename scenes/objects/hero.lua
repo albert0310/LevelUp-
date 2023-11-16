@@ -44,7 +44,6 @@ function M.new(Hero,world)
         {name = "walk", sheet = walk_sheet, frames = {1, 2, 3, 4}, time = 1000, loopCount = 0},
         {name = "dash", sheet = dash_sheet, frames = {1, 2}, time = 200, loopCount = 1},
         {name = "jump", sheet = jumping_sheet, frames = {1, 2, 3, 4}, time = 300, loopCount = 1},
-        --{name = "omega_slash", sheet = omega_slash_sheet, frames={1}, timer = 1300, loopCount= 0}
     }
     Hero = display.newSprite(parent, idle_sheet, sequenceData)
     Hero:setSequence("idle")
@@ -61,7 +60,7 @@ function M.new(Hero,world)
     local experience = 80
     local max_experience = 100
     Hero.dashBool = true
-    Hero.dashCD = 350
+    Hero.dashCD = 400
     Hero.direction = "right"
     Hero.level = 1
     Hero.maxHP = 150
@@ -69,6 +68,12 @@ function M.new(Hero,world)
     Hero.armor = 5
     Hero.damage = 25
     Hero.name = "hero"
+    Hero.megaslashCD = 7
+    Hero.megaslashBool = true
+    Hero.earthshatterCD = 10
+    Hero.earthshatterBool = true
+    Hero.omnislashCD = 15
+    Hero.omnislashBool = true
 	local x, y = Hero.x, Hero.y
     --movement
     local max, acceleration, left, right, flip = 150, 750, 0, 0, 0
@@ -130,8 +135,7 @@ function M.new(Hero,world)
                 end
             end
             if event.keyName == "skill1" or event.keyName == "1" then
-                Hero:setSequence("omega_slash")
-                Hero:play()
+                
                 Hero.isAttacking = true
             end
             if right == 0 and left == 0 and not Hero.jumping then
@@ -195,6 +199,45 @@ function M.new(Hero,world)
         end
     end
     
+    --function skills
+    local function megaslashCDtick()
+        Hero.megaslashCD = Hero.megaslashCD - 1
+        if Hero.megaslashCD <= 0 then
+             Hero.megaslashCD = 7
+             Hero.megaslashBool = true
+        end
+    end
+
+    function Hero:megaslash()
+        Hero.megaslashBool = false
+        local tm = timer.performWithDelay(1000,megaslashCDtick,Hero.megaslashCD)
+    end
+
+    local function earthshatterCDtick()
+        Hero.earthshatterCD = Hero.earthshatterCD - 1
+        if Hero.earthshatterCD <= 0 then
+             Hero.earthshatterCD = 7
+             Hero.earthshatterBool = true
+        end
+    end
+
+    function Hero:earthshatter()
+        Hero.earthshatterBool = false
+        local tm = timer.performWithDelay(1000,earthshatterCDtick,Hero.earthshatterCD)
+    end
+
+    local function omnislashCDtick()
+        Hero.omnislashCD = Hero.omnislashCD - 1
+        if Hero.omnislashCD <= 0 then
+             Hero.omnislashCD = 7
+             Hero.omnislashBool = true
+        end
+    end
+
+    function Hero:omnislash()
+        Hero.omnislashBool = false
+        local tm = timer.performWithDelay(1000,omnislashCDtick,Hero.omnislashCD)
+    end
 
     --collision
     function Hero:collision(event)

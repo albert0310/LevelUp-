@@ -6,12 +6,25 @@ local fx = require "com.ponywolf.ponyfx"
 function M.new(Skill, hero, world)
     local parent = world
     local omega_slash_sheet = graphics.newImageSheet( "assets/main-character/skills/omega-slash (2).png", {
-        width= 300,
-        height= 240,
-        numFrames= 5,
+        width = 300,
+        height = 240,
+        numFrames = 5,
+    })
+    local earth_shatter_sheet = graphics.newImageSheet( "assets/main-character/skills/earth-shatter.png", {
+        width = 1800/6,
+        height = 240,
+        numFrames = 6,
+    })
+    local omni_slash_sheet = graphics.newImageSheet( "assets/main-character/skills/omni-slash.png", {
+        width= 1600/4,
+        height = 200,
+        numFrames = 4
     })
     local sequenceData = {
-        {name = "omega_slash", sheet = omega_slash_sheet,frames = {1,2,3,4,5}, time = 350, loopCount= 1}
+        {name = "omega_slash", sheet = omega_slash_sheet,frames = {1,2,3,4,5}, time = 350, loopCount= 1},
+        {name = "earth_shatter", sheet = earth_shatter_sheet, frames= {1,2,3,4,5,6}, time = 700, loopCount=1},
+        {name = "omni_slash", sheet = omni_slash_sheet, frames= {1,2,3,4}, time = 450, loopCount=3}
+    
     }
     Skill = display.newSprite( parent ,omega_slash_sheet, sequenceData )
     Skill.x,Skill.y = hero.x, hero.y
@@ -22,9 +35,9 @@ function M.new(Skill, hero, world)
     Skill.Available = true
     Skill.rangexmin = 0
     Skill.rangexmax = 0
-    local function key(event)
-        if (event.keyName == "skill1" or event.keyName == "1") and Skill.Available then
-            Skill.isVisible = true
+
+    function Skill:megaslash()
+        Skill.isVisible = true
             hero.isVisible = false
             Skill:setSequence("omega_slash")
             Skill:play()
@@ -33,7 +46,30 @@ function M.new(Skill, hero, world)
                 hero.isVisible = true
             end )
             Skill.Available = false;
-        end
+    end
+
+    function Skill:earthshatter()
+        Skill.isVisible = true
+            hero.isVisible = false
+            Skill:setSequence("earth_shatter")
+            Skill:play()
+            Skill.timer = timer.performWithDelay( 800,function ()
+                Skill.isVisible = false
+                hero.isVisible = true
+            end )
+            Skill.Available = false;
+    end
+
+    function Skill:omnislash()
+        Skill.isVisible = true
+            hero.isVisible = false
+            Skill:setSequence("omni_slash")
+            Skill:play()
+            Skill.timer = timer.performWithDelay( 1000,function ()
+                Skill.isVisible = false
+                hero.isVisible = true
+            end )
+            Skill.Available = false
     end
 
     local function enterFrame()
@@ -58,7 +94,6 @@ function M.new(Skill, hero, world)
     end
 
     Skill:addEventListener("finalize")
-    Runtime:addEventListener("key",key)
     Runtime:addEventListener("enterFrame", enterFrame)
     
     return Skill
