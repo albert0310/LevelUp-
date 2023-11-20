@@ -1,15 +1,15 @@
 --
 -- Import
 
-local composer = require("composer")
-local relayout = require("libs.relayout")
-local physics = require "physics"
 local composer = require"composer"
 local relayout = require"libs.relayout"
 local physics = require "physics"
 local terrains = require "scenes.objects.terrain"
 local heroes = require "scenes.objects.hero"
+local skills = require "scenes.objects.skills"
 local enemy = require "scenes.objects.enemy"
+local bosss = require "scenes.objects.boss"
+local health = require "scenes.objects.healthbar"
 local vjoy = require( "com.ponywolf.vjoy" )
 local color = require "com.ponywolf.ponycolor"
 local fx = require "com.ponywolf.ponyfx" 
@@ -27,27 +27,266 @@ local _W, _H, _CX, _CY = relayout._W, relayout._H, relayout._CX, relayout._CY
 local scene = composer.newScene()
 
 local terrain, terrainCount, spawnTerrain = {}, 1
-local world, hero, musuh, wall, BG, blockade, decor
+local world, hero,skill, musuh, wall, BG, blockade, boss, decor, healthbar
+local back,right,left,attack,jump ,dash ,skil1,skil2,skil3,skil4,skil5 
 local enemies = {}
+local bblood = composer.getVariable("bloodOnOff")
+local textS = ""
+local textB = ""
+local bsound = composer.getVariable("soundOnOff")
+local diessound, slashsound
+--buttons
+local back,right,left,attack,jump,dash,skill1,skill2,skill3,skill4,skill5 
 
 -- Groups
 local _grpMain
+local _pauseGroup
+--
+-- Local functions
+local function removepauseMenu()
+    print (_pauseGroup.numChildren)
 
--- Sounds
+    for i = _pauseGroup.numChildren , 1 , -1 do
+        display.remove(_pauseGroup[i])
+    end
+
+    world.pause = false
+end
+
+local function resume( event )
+    if(event.phase == "ended" ) then
+        removepauseMenu()
+    end
+    return true 
+end
+
+local function sound(event)
+    if(event.phase == "ended" ) then
+        if bsound == true then
+            bsound = false
+            audio.stop(1)
+        else 
+            bsound = true
+            local musicTrack = composer.getVariable("musicTrack")
+            audio.play(musicTrack, {channel=1, loops = -1})
+        end
+
+        if bsound == false then
+            textS = "Off"
+        else
+            textS = "On"
+        end
+        composer.setVariable("soundOnOff", bsound)
+        for i = 1, _pauseGroup.numChildren, 1 do
+            if _pauseGroup[i].name == "txtSoundOnOff" then
+                _pauseGroup[i]:removeSelf()
+                local txtSoundOnOff = display.newText(textS, 450, 120, "assets/fonts/Shadow of the Deads.ttf", 15)
+                txtSoundOnOff.fill = {color.hex2rgb("#dba400")}
+                txtSoundOnOff.name = "txtSoundOnOff"
+                _pauseGroup:insert(txtSoundOnOff)
+            end
+        end
+    end
+end
+local function blood(event)
+    if(event.phase == "ended" ) then
+        if bblood == true then
+            bblood = false
+        else 
+            bblood = true
+        end
+
+        if bblood == false then
+            textB = "Off"
+        else
+            textB = "On"
+        end
+        composer.setVariable("bloodOnOff", bblood)
+        for i = 1, _pauseGroup.numChildren, 1 do
+            if _pauseGroup[i].name == "txtBloodOnoff" then
+                _pauseGroup[i]:removeSelf()
+                local txtBloodOnoff = display.newText(textB, 450, 155, "assets/fonts/Shadow of the Deads.ttf", 15)
+                txtBloodOnoff.fill = {color.hex2rgb("#dba400")}
+                txtBloodOnoff.name = "txtBloodOnoff"
+                _pauseGroup:insert(txtBloodOnoff)
+            end
+        end
+    end
+end
+
+local function goBack()
+    removepauseMenu()
+    fx.fadeOut( function()
+        composer.gotoScene( "scenes.menu")
+    end )
+end
+
+local function createpauseMenu()
+    print "createpause"
+
+    local pausemenu = display.newImage( _pauseGroup,"assets/menu/pausemenu.png", 180, 180)
+    pausemenu.x, pausemenu.y =  400, 150
+    
+    local txtSound = display.newText(_pauseGroup, "Sound" , 350, 120, "assets/fonts/Shadow of the Deads.ttf", 15)
+    txtSound.fill = {color.hex2rgb("#dba400")}
+
+    if bsound  then
+        textS = "On"
+    else
+        textS = "Off" 
+    end
+    local txtSoundOnOff = display.newText(textS, 450, 120, "assets/fonts/Shadow of the Deads.ttf", 15)
+    txtSoundOnOff.fill = {color.hex2rgb("#dba400")}
+    txtSoundOnOff.name = "txtSoundOnOff"
+    _pauseGroup:insert(txtSoundOnOff)
+
+    local txtBlood = display.newText(_pauseGroup, "Blood ", 347, 155, "assets/fonts/Shadow of the Deads.ttf", 15)
+    txtBlood.fill = {color.hex2rgb("#dba400")}
+
+    if bblood then
+        textB = "On"
+    else
+        textB = "Off" 
+    end
+    local txtBloodOnoff = display.newText( textB, 450, 155, "assets/fonts/Shadow of the Deads.ttf", 15)
+    txtBloodOnoff.fill = {color.hex2rgb("#dba400")}
+    txtBloodOnoff.name = "txtBloodOnoff"
+    _pauseGroup:insert(txtBloodOnoff)
+
+    local txtResume = display.newText( _pauseGroup ,"Resume ", 362, 190, "assets/fonts/Shadow of the Deads.ttf", 15)
+    txtResume.fill = {color.hex2rgb("#dba400")}
+
+    local txtBack = display.newText( _pauseGroup, "Back", 342, 225, "assets/fonts/Shadow of the Deads.ttf", 15)
+    txtBack.fill = {color.hex2rgb("#dba400")}
+
+    txtBlood:addEventListener("touch", blood)
+    txtResume:addEventListener("touch", resume)
+    txtSound:addEventListener("touch", sound)
+    txtBack:addEventListener("tap", goBack)
+
+    world.pause = true
+end
+
+local function dead(x,y)
+    if bblood then
+        if bsound then
+            audio.play(diessound)
+        end
+        for i = 0, 20, 1 do
+            local radius = math.random(1, 10)
+            local blood = display.newCircle(world, x, y, radius)
+            local toX = blood.x + math.random(-100, 100)
+            local toY = blood.y + math.random(-100,100)
+            blood.fill = {color.hex2rgb("#ba1004")}
+            transition.to(blood, {time = 500, x=toX, y=toY, alpha=0, rotation=180})
+        end
+    end
+    local temp_dead = 1
+    for index, value in ipairs(enemies) do
+        if value.isDead then
+            temp_dead = temp_dead + 1
+        end
+    end
+    print(temp_dead .. " - " .. #enemies)
+    if temp_dead == #enemies then
+        fx.fadeOut( function()
+            composer.gotoScene( "scenes.menu")
+        end )
+    end
+end
+
+local function slashingsound()
+    if bsound then
+        audio.play(slashsound)
+    end
+end
+--skill functions
+
+local function megaslash()
+    if hero.megaslashBool then
+        hero.megaslash()
+        skill.megaslash()
+        for index, value in ipairs(enemies) do
+            --print( value.type .. " - " .. value.x .. " - " .. value.y)
+            --print( hero.x .. " - " .. hero.y)
+            --json.prettify( hero )
+            --json.prettify( enemies )
+            if value.type == "enemy" and value.isDead ~= true then
+                if hero.direction == "right" then
+                    if value.x >= hero.x and value.x < hero.x+150  then
+                        value:hurt(hero.damage*1.8)
+                    end
+                else
+                    if value.x <= hero.x and value.x > hero.x-150  then
+                        value:hurt(hero.damage*1.8)
+                    end
+                end
+                if value.hp <= 0 then
+                    hero:kill(value.name)
+                    dead(value.x, value.y)
+                    value.isDead = true
+                end
+            end
+        end
+    end
+end
+
+local function earthshatter()
+    if hero.earthshatterBool then
+        hero.earthshatter()
+        skill.earthshatter()
+        
+        for index, value in ipairs(enemies) do
+            if value.type == "enemy" and value.isDead ~= true then
+                if hero.direction == "right" then
+                    if value.x >= hero.x + 90 and value.x < hero.x+190  then
+                        value:hurt(hero.damage*2)
+                    end
+                else
+                    if value.x <= hero.x - 90 and value.x > hero.x-190  then
+                        value:hurt(hero.damage*2)
+                        
+                    end
+                end
+                if value.hp <= 0 then
+                    hero:kill(value.name)
+                    dead(value.x, value.y)
+                    value.isDead = true
+                end
+            end
+        end
+    end
+    
+end
+
+local function omnislash()
+    if hero.omnislashBool then
+        hero.omnislash()
+        skill.omnislash()
+        for index, value in ipairs(enemies) do
+            if value.type == "enemy" and value.isDead ~= true then
+                if hero.direction == "right" then
+                    if value.x >= hero.x - 50 and value.x < hero.x+250  then
+                        value:hurt(hero.damage*2.5)
+                    end
+                else
+                    if value.x <= hero.x + 50 and value.x > hero.x-250  then
+                        value:hurt(hero.damage*2.5)                        
+                    end
+                end
+                if value.hp <= 0 then
+                    hero:kill(value.name)
+                    dead(value.x, value.y)
+                    value.isDead = true
+                end
+            end
+        end
+    end
+end
+--
 
 
 --
--- Local functions
-local function dead(x,y)
-    for i = 0, 20, 1 do
-        local radius = math.random(1, 10)
-        local blood = display.newCircle(world, x, y, radius)
-        local toX = blood.x + math.random(-100, 100)
-        local toY = blood.y + math.random(-100,100)
-        blood.fill = {color.hex2rgb("#ba1004")}
-        transition.to(blood, {time = 500, x=toX, y=toY, alpha=0, rotation=180})
-    end
-end
 
 --
 -- Scene events functions
@@ -58,6 +297,7 @@ function scene:create( event )
     physics.start()
 
     BG = display.newGroup()
+    _pauseGroup = display.newGroup()
 
     local background = display.newRect(BG , _CX, _CY,  display.pixelWidth, display.pixelHeight)
     background.fill =  {color.hex2rgb("191c54")}
@@ -66,100 +306,63 @@ function scene:create( event )
 
     world = display.newGroup()
     sceneGroup:insert(world)
-
+    world.pause = false
     --placing buttons
     local isSimulator = "simulator" == system.getInfo( "environment" )
     local isMobile = ( "ios" == system.getInfo("platform") ) or ( "android" == system.getInfo("platform") )
     if isMobile or isSimulator then
-        local back = vjoy.newButton(60 , "back")
-        local right = vjoy.newButton( 60, "right" )
-        local left = vjoy.newButton( 60, "left" )
-        local attack = vjoy.newButton(60, "attack")
-        local jump = vjoy.newButton(60, "jump")
-        local dash = vjoy.newButton(60, "dash")
-        local skil1 = vjoy.newButton(60, "skill1")
-        local skil2 = vjoy.newButton(60, "skill1")
-        local skil3 = vjoy.newButton(60, "skill1")
-        local skil4 = vjoy.newButton(60, "skill1")
-        local skil5 = vjoy.newButton(60, "skill1")
+        back = vjoy.newButton("assets/menu/setting.png" , "back", sceneGroup)
+        right = vjoy.newButton( 60, "right", sceneGroup )
+        left = vjoy.newButton( 60, "left" , sceneGroup)
+        attack = vjoy.newButton("assets/menu/attack-button.png", "attack", sceneGroup)
+        jump = vjoy.newButton("assets/main-character/skills/jump.png", "jump", sceneGroup)
+        dash = vjoy.newButton("assets/main-character/skills/dash.png", "dash", sceneGroup)
+        skill1 = vjoy.newButton("assets/main-character/skills/mega-slash.png", "skill1", sceneGroup)
+        skill1.name = "megaslash"
+        skill2 = vjoy.newButton("assets/main-character/skills/earth-shatter-icon.png", "skill2", sceneGroup)
+        skill2.name = "earthshatter"
+        skill3 = vjoy.newButton("assets/main-character/skills/omnislash.png", "skill3", sceneGroup)
+        skill3.name = "omnislash"
+        skill4 = vjoy.newButton("assets/main-character/skills/locked.png", "skill4", sceneGroup)
+        skill5 = vjoy.newButton("assets/main-character/skills/locked.png", "skill5", sceneGroup)
         --position
         back.x,back.y = display.actualContentWidth - 50 , 50
         attack.x,attack.y = display.actualContentWidth - 50 , _CY + 130
         dash.x,dash.y = display.actualContentWidth - 30 , _CY + 60
         jump.x,jump.y = display.actualContentWidth - 80 , _CY + 70
-        skil1.x,skil1.y = display.actualContentWidth - 115 , _CY + 105
-        skil2.x, skil2.y = display.actualContentWidth - 130 , _CY + 150
-        skil3.x, skil3.y = display.actualContentWidth - 160 , _CY + 105
-        skil4.x, skil4.y = display.actualContentWidth - 175 , _CY + 150
-        skil5.x, skil5.y = display.actualContentWidth - 220 , _CY + 150
+        skill1.x,skill1.y = display.actualContentWidth - 115 , _CY + 105
+        skill2.x, skill2.y = display.actualContentWidth - 130 , _CY + 150
+        skill3.x, skill3.y = display.actualContentWidth - 160 , _CY + 105
+        skill4.x, skill4.y = display.actualContentWidth - 175 , _CY + 150
+        skill5.x, skill5.y = display.actualContentWidth - 220 , _CY + 150
         right.x, right.y = display.screenOriginX + 130, display.screenOriginY + display.contentHeight - 40
         left.x, left.y =  display.screenOriginX + 70,display.screenOriginY + display.contentHeight - 40  
         --scale
         back.xScale, back.yScale = 0.4, 0.4
-        jump.xScale, jump.yScale = 0.3, 0.3
-        dash.xScale, dash.yScale = 0.3, 0.3
-        skil1.xScale, skil1.yScale = 0.3, 0.3
-        skil2.xScale, skil2.yScale = 0.3, 0.3
-        skil3.xScale, skil3.yScale = 0.3, 0.3
-        skil4.xScale, skil4.yScale = 0.3, 0.3
-        skil5.xScale, skil5.yScale = 0.3, 0.3
-        attack.xScale, attack.yScale = 0.65, 0.65
+        jump.xScale, jump.yScale = 0.8, 0.8
+        dash.xScale, dash.yScale = 0.8, 0.8
+        skill1.xScale, skill1.yScale = 0.8, 0.8
+        skill2.xScale, skill2.yScale = 0.8, 0.8
+        skill3.xScale, skill3.yScale = 0.8, 0.8
+        skill4.xScale, skill4.yScale = 0.8, 0.8
+        skill5.xScale, skill5.yScale = 0.8, 0.8
+        attack.xScale, attack.yScale = 1, 1
         right.xScale, right.yScale = 0.3 , 0.3
         left.xScale, left.yScale = 0.3, 0.3
     end
     --wall
-    wall = display.newRect(world, -150, 130, 300, 1000)
+    wall = display.newImageRect(world, "assets/background/border.png" , 300, 1000)
+    wall.x, wall.y = -120, _CY - 350
     physics.addBody( wall, "static", {density = 100, bounce = 0, friction = 1})
 
-    
-
     --player
-    hero = display.newRect(world, 0 , _CY , 100, 100)
-    hero = heroes.new(hero)
+    hero = heroes.new(hero,world)
+    skill = skills.new(skill, hero, world)
 
-     --key
-     function key(event)
-        if event.phase == "up" then
-            if event.keyName == "attack" or event.keyName == "t" then
-                for index, value in ipairs(enemies) do
-                    --print( value.type .. " - " .. value.x .. " - " .. value.y)
-                    --print( hero.x .. " - " .. hero.y)
-                    if value.type == "enemy" and index ~= temp and value.isDead ~= true then
-                        if hero.direction == "right" then
-                            if value.x >= hero.x and value.x < hero.x+120  then
-                                print("damage" .. hero.damage)
-                                print("level" .. hero.level)
-                                value:hurt(hero.damage)
-                                if value.hp <= 0 then
-                                    hero:kill(value.name)
-                                    dead(value.x, value.y)
-                                    value.isDead = true
-                                end
-                            end
-                        else
-                            if value.x <= hero.x and value.x > hero.x-120  then
-                                print("damage" .. hero.damage)
-                                print("level" .. hero.level)
-                                value:hurt(hero.damage)
-                                if value.hp <= 0 then
-                                    hero:kill(value.name)
-                                    dead(value.x, value.y)
-                                    value.isDead = true
-                                end
-                            end
-                        end
-                        
-                    end
-                end
-            end
-            if event.keyName == "back" or event.keyName == "escape" then
-                fx.fadeOut( function()
-                        composer.gotoScene( "scenes.menu")
-                    end )
-            end
-        end
-    end 
-    
+    --healthbar
+    healthbar = health.new(hero, sceneGroup)
+
+    --decor
     decor = display.newGroup()
     world:insert(decor)
     --terrains
@@ -223,6 +426,81 @@ function scene:create( event )
     musuh = display.newRect(world, 4250, _CY , 100, 100)
     musuh = enemy.new(musuh, "sundel", hero)
     table.insert(enemies, musuh)
+
+     --key
+     function key(event)
+        if event.phase == "up" and not world.pause then
+            if event.keyName == "attack" or event.keyName == "t" then
+                for index, value in ipairs(enemies) do
+                    --print( value.type .. " - " .. value.x .. " - " .. value.y)
+                    --print( hero.x .. " - " .. hero.y)
+                    json.prettify( hero )
+                    json.prettify( enemies )
+                    if value.type == "enemy" and value.isDead ~= true then
+                        if hero.direction == "right" then
+                            if value.x >= hero.x and value.x < hero.x+120  then
+                                slashingsound()
+                                value:hurt(hero.damage)
+                            end
+                        else
+                            if value.x <= hero.x and value.x > hero.x-120  then
+                                slashingsound()
+                                value:hurt(hero.damage)
+                            end
+                        end
+                        if value.hp <= 0 then
+                            hero:kill(value.name)
+                            dead(value.x, value.y)
+                            value.isDead = true
+                        end
+                    end
+                end
+            end
+            --skills
+            if event.keyName == "skill1" or event.keyName == "t" then
+                print(hero.direction)
+                if skill1.name == "megaslash"  then
+                    megaslash()
+                elseif skill1.name == "omnislash" then
+                    omnislash()
+                elseif skill1.name == "earthshatter" then
+                    earthshatter()
+                end
+            end
+            if event.keyName == "skill2" or event.keyName == "t" then
+                print(hero.direction)
+                if skill2.name == "megaslash" then
+                    megaslash()
+                elseif skill2.name == "omnislash" then
+                    omnislash()
+                elseif skill2.name == "earthshatter" then
+                    earthshatter()
+                end
+            end
+            if event.keyName == "skill3" or event.keyName == "t" then
+                print(hero.direction)
+                if skill3.name == "megaslash" then
+                    megaslash()
+                elseif skill3.name == "omnislash" then
+                    omnislash()
+                elseif skill3.name == "earthshatter" then
+                    earthshatter()
+                end
+            end
+            if event.keyName == "back" or event.keyName == "escape" then
+                print(world.pause)
+                if world.pause then
+                    removepauseMenu()
+                else
+                    createpauseMenu()
+                end
+                return true
+            end
+        end
+    end 
+    slashsound = audio.loadSound("assets/sound/slash.mp3")
+    diessound = audio.loadSound("assets/sound/dies.wav")
+    
     Runtime:addEventListener("key", key) 
 end
 

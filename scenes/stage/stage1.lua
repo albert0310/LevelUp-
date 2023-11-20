@@ -44,10 +44,7 @@ local _pauseGroup
 -- Sounds
 
 
---
 -- Local functions
-
-
 local function removepauseMenu()
     print (_pauseGroup.numChildren)
 
@@ -186,6 +183,7 @@ local function dead(x,y)
             transition.to(blood, {time = 500, x=toX, y=toY, alpha=0, rotation=180})
         end
     end
+    
 end
 
 local function slashingsound()
@@ -208,28 +206,18 @@ local function megaslash()
             if value.type == "enemy" and value.isDead ~= true then
                 if hero.direction == "right" then
                     if value.x >= hero.x and value.x < hero.x+150  then
-                        print("damage" .. hero.damage*1.8)
-                        print("level" .. hero.level)
                         value:hurt(hero.damage*1.8)
-                        if value.hp <= 0 then
-                            hero:kill(value.name)
-                            dead(value.x, value.y)
-                            value.isDead = true
-                        end
                     end
                 else
                     if value.x <= hero.x and value.x > hero.x-150  then
-                        print("damage" .. hero.damage*1.8)
-                        print("level" .. hero.level)
                         value:hurt(hero.damage*1.8)
-                        if value.hp <= 0 then
-                            hero:kill(value.name)
-                            dead(value.x, value.y)
-                            value.isDead = true
-                        end
                     end
                 end
-                
+                if value.hp <= 0 then
+                    hero:kill(value.name)
+                    dead(value.x, value.y)
+                    value.isDead = true
+                end
             end
         end
         if boss and boss.isDead ~= true then
@@ -267,34 +255,24 @@ local function earthshatter()
             if value.type == "enemy" and value.isDead ~= true then
                 if hero.direction == "right" then
                     if value.x >= hero.x + 90 and value.x < hero.x+190  then
-                        print("damage" .. hero.damage*2)
-                        print("level" .. hero.level)
                         value:hurt(hero.damage*2)
-                        if value.hp <= 0 then
-                            hero:kill(value.name)
-                            dead(value.x, value.y)
-                            value.isDead = true
-                        end
                     end
                 else
                     if value.x <= hero.x - 90 and value.x > hero.x-190  then
-                        print("damage" .. hero.damage*1.8)
-                        print("level" .. hero.level)
-                        value:hurt(hero.damage*1.8)
-                        if value.hp <= 0 then
-                            hero:kill(value.name)
-                            dead(value.x, value.y)
-                            value.isDead = true
-                        end
+                        value:hurt(hero.damage*2)
                     end
                 end
-                
+                if value.hp <= 0 then
+                    hero:kill(value.name)
+                    dead(value.x, value.y)
+                    value.isDead = true
+                end
             end
         end
         if boss and boss.isDead ~= true then
             if hero.direction == "right" then
                 if boss and (boss.x >= hero.x + 90 and boss.x < hero.x+190)  then
-                    boss:hurt(hero.damage)
+                    boss:hurt(hero.damage*2)
                     if boss.isDead then
                         boss.isVisible = false
                         fx.fadeOut( function()
@@ -304,7 +282,7 @@ local function earthshatter()
                 end
             else
                 if boss and (boss.x <= hero.x - 90 and boss.x > hero.x-190)  then
-                    boss:hurt(hero.damage)
+                    boss:hurt(hero.damage*2)
                     if boss.isDead then
                         boss.isVisible = false
                         fx.fadeOut( function()
@@ -326,34 +304,24 @@ local function omnislash()
             if value.type == "enemy" and value.isDead ~= true then
                 if hero.direction == "right" then
                     if value.x >= hero.x - 50 and value.x < hero.x+250  then
-                        print("damage" .. hero.damage*2)
-                        print("level" .. hero.level)
-                        value:hurt(hero.damage*2)
-                        if value.hp <= 0 then
-                            hero:kill(value.name)
-                            dead(value.x, value.y)
-                            value.isDead = true
-                        end
+                        value:hurt(hero.damage*2.5)
                     end
                 else
                     if value.x <= hero.x + 50 and value.x > hero.x-250  then
-                        print("damage" .. hero.damage*1.8)
-                        print("level" .. hero.level)
-                        value:hurt(hero.damage*1.8)
-                        if value.hp <= 0 then
-                            hero:kill(value.name)
-                            dead(value.x, value.y)
-                            value.isDead = true
-                        end
+                        value:hurt(hero.damage*2.5)
                     end
                 end
-                
+                if value.hp <= 0 then
+                    hero:kill(value.name)
+                    dead(value.x, value.y)
+                    value.isDead = true
+                end
             end
         end
         if boss and boss.isDead ~= true then
             if hero.direction == "right" then
                 if boss and (boss.x >= hero.x - 50 and boss.x < hero.x +250)  then
-                    boss:hurt(hero.damage)
+                    boss:hurt(hero.damage*2.5)
                     if boss.isDead then
                         boss.isVisible = false
                         fx.fadeOut( function()
@@ -363,7 +331,7 @@ local function omnislash()
                 end
             else
                 if boss and (boss.x <= hero.x + 50 and boss.x > hero.x-250)  then
-                    boss:hurt(hero.damage)
+                    boss:hurt(hero.damage*2.5)
                     if boss.isDead then
                         boss.isVisible = false
                         fx.fadeOut( function()
@@ -390,6 +358,20 @@ function scene:create( event )
     local background = display.newRect(BG , _CX, _CY,  display.pixelWidth, display.pixelHeight)
     background.fill =  {color.hex2rgb("191c54")}
 
+    for i = 1, 6, 1 do
+        local ran = math.random(1,2)
+        local cloud
+        if ran == 1 then
+            local tempy = math.random(80, 120)
+            cloud = display.newImageRect(BG,"assets/background/cloud-1.png" , 80, 40)
+            cloud.x, cloud.y = (i*100), tempy
+        else
+            local tempy = math.random(80, 120)
+            cloud = display.newImageRect(BG,"assets/background/cloud-2.png", 80, 40)
+            cloud.x, cloud.y = (i*80), tempy
+        end
+    end
+    
     sceneGroup:insert(BG)
 
     world = display.newGroup()
