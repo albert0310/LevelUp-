@@ -23,19 +23,21 @@ local _grpMain
 --
 -- Local functions
 local function gotoStage1()
-    composer.gotoScene("scenes.stage.stage1")
+    composer.gotoScene("scenes.stage.story1")
 end
 local function gotoStage2()
-    composer.gotoScene("scenes.stage.stage2")
+    composer.gotoScene("scenes.stage.story2")
 end
 local function gotoStage3()
-    composer.gotoScene("scenes.stage.stage3")
+    composer.gotoScene("scenes.stage.story3")
 end
 local function gotoStage4()
-    composer.gotoScene("scenes.stage.stage4")
+    composer.gotoScene("scenes.stage.story4")
 end
 local function gotoStage5()
-    composer.gotoScene("scenes.stage.stage5")
+    composer.gotoScene("scenes.stage.story5")
+    -- composer.gotoScene("scenes.stage.storyended")
+
 end
 local function gotoMenu()
     composer.gotoScene("scenes.menu")

@@ -45,7 +45,6 @@ end
 function scene:create( event )
 
     print("scene:create - menu")
-    print(tostring(composer.getVariable("soundOnOff")))
     _grpMain = display.newGroup()
 
     self.view:insert(_grpMain)

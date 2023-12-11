@@ -21,13 +21,14 @@ function M.new(Boss, world, hero, stage)
     Boss = display.newSprite(parent, boss_sheet, boss_sequenceData)
     Boss:setSequence("idle")
     Boss:play()
-    physics.addBody( Boss, "dynamic", { density = 0.5, bounce = 0.2, friction =  0.2 , 
+    physics.addBody( Boss, "dynamic", { density = 0.5, bounce = 0.2, friction =  0.2 ,
         	filter = {categoryBits = 2, maskBits = 1}
 	} )
 
     --properties
     Boss.isDead = false
     Boss.hp = 500
+    Boss.maxHP = 500
     Boss.armor = 10
     Boss.damage = 65
     Boss.attackCD = 300
@@ -36,12 +37,8 @@ function M.new(Boss, world, hero, stage)
     Boss.max = 170
     Boss.attacking = false
     Boss.name = "boss"
-    function Boss:attack()
-        if (Boss.x > hero.x-100 and Boss.x < hero.x ) or (Boss.x < hero.x+100 and Boss.x > hero.x )  then
-            print(" DAMAGE")
-            hero:hurt(Boss.damage)
-        end
-	end
+    local health = display.newImageRect(parent, "assets/main-character/skills/inner-health.png" , 150, 10)
+    local healthwidth = 150
 
     function Boss:dead()
         for i = 0, 30, 1 do
@@ -62,10 +59,66 @@ function M.new(Boss, world, hero, stage)
             timer.cancel( Boss.timer )
         end
     end
-
-    
-
     local hx, hy , ball
+    local function attack()
+        local vx, vy = Boss:getLinearVelocity()
+        local direction =  hero.x - Boss.x
+        if direction < 0 then
+            Boss.flip = -0.133
+        elseif direction > 0 then
+            Boss.flip = 0.133
+        end
+        if Boss.x < hx then
+            vx = 1
+            Boss.x = Boss.x + 2
+        elseif Boss.x > hx then
+            vx = 1
+            Boss.x = Boss.x - 2
+        else
+            vx = 0
+        end
+        Boss.xScale = math.min(1, math.max(Boss.xScale + Boss.flip, -1))
+        if vx == 0 then
+            Boss:setSequence("idle")
+            Boss:play()
+        end
+        if vx ~= 0 then
+            print("ok")
+            if Boss.sequence == "idle" and Boss then
+                Boss:setSequence("walk")
+                Boss:play()
+            end
+        end
+        if (Boss.x > hx-100 and Boss.x < hx     ) or (Boss.x < hx+100 and Boss.x > hx ) then
+            Boss:setSequence("attack")
+            Boss:play()
+            if (Boss.x > hero.x-100 and Boss.x < hero.x ) or (Boss.x < hero.x+100 and Boss.x > hero.x )  then
+                hero:hurt(Boss.damage)
+            end
+            Boss.timer = timer.performWithDelay( 900, function()
+                if Boss then
+                    Boss:setSequence("idle")
+                    Boss:play()
+                end
+            end )
+            Boss.attackTimer = Boss.attackCD
+            Boss.attacking = false
+        end
+    end
+    local function ranged()
+        Boss:setSequence("ranged")
+        Boss:play()
+        ball = bullet.new(ball, parent, hero, Boss.x, Boss.y - 100, hx, hy, "boss")
+        Boss.timer = timer.performWithDelay( 900, function()
+            if Boss then
+                Boss:setSequence("idle")
+                Boss:play()
+            end
+        end )
+        Boss.attackTimer = Boss.attackCD
+        Boss.attacking = false
+    end
+
     local function enterFrame()
         if not parent.pause then
             local ran
@@ -74,84 +127,28 @@ function M.new(Boss, world, hero, stage)
                     Boss.attacking = true
                     hx = hero.x
                     hy = hero.y
-                    ran = math.random(1, 10)
                 end
                 if Boss.attacking then
                     if stage == 5 then
-                        print(ran)
-                        if ran <= 3 then
-                            local ball = bullet.new(ball, parent, hx, hy, "boss")
-                            ball.x , ball.y = Boss.x, Boss.y - 100
-                            Boss.attackTimer = Boss.attackCD
-                            Boss.attacking = false
+                        ran = math.random(10)
+                        if ran < 3 then
+                            ranged()
                         else
-
-                            Boss.attackTimer = Boss.attackCD
-                            Boss.attacking = false
+                            attack()
                         end
                     else
-                        local vx, vy = Boss:getLinearVelocity()
-                        local direction =  hero.x - Boss.x
-                        local left, right = 0, 0
-                        if direction < 0 then
-                            Boss.flip = -0.133
-                            left = -Boss.acceleration 
-                        elseif direction > 0 then
-                            Boss.flip = 0.133
-                            right = Boss.acceleration
-                        end
-                        local dx = left+right
-                        print(hx .. ' ' .. dx .. ' ' .. vx)
-                        --[[ --if (dx < 0 and vx > -Boss.max and Boss.x > hx) or (dx > 0 and vx < Boss.max and Boss.x < hx )then
-                            if not ((Boss.x > hx-100 and Boss.x < hx ) or (Boss.x < hx+100 and Boss.x > hx ))then
-                                --Boss:applyForce(dx or 0, 0, Boss.x, Boss.y)
-                            
-                            end
-                        --end ]]
-                        if Boss.x < hx then
-                            vx = 1
-                            Boss.x = Boss.x + 2
-                        elseif Boss.x > hx then
-                            vx = 1
-                            Boss.x = Boss.x - 2
-                        else
-                            vx = 0
-                        end
-                        Boss.xScale = math.min(1, math.max(Boss.xScale + Boss.flip, -1))
-                        if vx == 0 then
-                            Boss:setSequence("idle")
-                            Boss:play()
-                        end
-                        if vx ~= 0 then
-                            print("ok")
-                            if Boss.sequence == "idle" and Boss then
-                                Boss:setSequence("walk")
-                                Boss:play()
-                            end
-                        end
-
-                        if (Boss.x > hx-100 and Boss.x < hx ) or (Boss.x < hx+100 and Boss.x > hx ) then
-                            Boss:setSequence("attack")
-                            Boss:play()
-                            print("lol")
-                            Boss:attack()
-                            Boss.timer = timer.performWithDelay( 900, function() 
-                                if Boss then
-                                    Boss:setSequence("idle")
-                                    Boss:play()  
-                                end 
-                            end )
-                            Boss.attackTimer = Boss.attackCD
-                            Boss.attacking = false
-                        end
+                        attack()
                     end
-                    
+
                 end
                 Boss.attackTimer = Boss.attackTimer - 1
             end
-        end    
+        end
+        health.x,health.y = Boss.x, Boss.y - 100
+        local percent = Boss.hp / Boss.maxHP
+        health.width = healthwidth * percent
     end
-    
+
     function Boss:finalize()
         print("boss hilang")
         if Boss.timer then

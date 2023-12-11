@@ -22,6 +22,15 @@ function M.newButton(radius, key, parent)
     instance = display.newImage( radius, 0,0 )
   end
 
+  function instance:onCD()
+    instance:setFillColor( 0.16, 0.16, 0.16, 0.5 )
+  end
+
+  function instance:offCD()
+    instance:setFillColor( 1, 1, 1, 1 )
+  end
+
+
   function instance:touch(event)
     local phase = event.phase
     if phase=="began" then

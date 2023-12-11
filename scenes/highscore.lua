@@ -6,10 +6,12 @@ local relayout = require("libs.relayout")
 local physics = require "physics"
 local color = require "com.ponywolf.ponycolor"
 local fx = require "com.ponywolf.ponyfx" 
+local json = require "json"
 
 --
 -- Set variables
-
+local scoresTable = {}
+local filePath = system.pathForFile( "scores.json", system.DocumentsDirectory )
 -- Layout
 local _W, _H, _CX, _CY = relayout._W, relayout._H, relayout._CX, relayout._CY 
 
@@ -29,12 +31,40 @@ local function gotoMenu()
         composer.gotoScene("scenes.menu")
     end)
 end
+
+local function loadScores()
+ 
+    local file = io.open( filePath, "r" )
+ 
+    if file then
+        local contents = file:read( "*a" )
+        io.close( file )
+        scoresTable = json.decode( contents )
+    end
+ 
+    if ( scoresTable == nil or #scoresTable == 0 ) then
+        scoresTable = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+    end
+end
+
+local function saveScores()
+ 
+    for i = #scoresTable, 11, -1 do
+        table.remove( scoresTable, i )
+    end
+ 
+    local file = io.open( filePath, "w" )
+ 
+    if file then
+        file:write( json.encode( scoresTable ) )
+        io.close( file )
+    end
+end
 --
 -- Scene events functions
 
 function scene:create( event )
-
-    print("scene:create - leaderboard")
+    print("scene:create - leaderboard - " )
 
     _grpMain = display.newGroup()
 
@@ -52,15 +82,21 @@ function scene:create( event )
     txtHighscore.fill = {color.hex2rgb("#dba400")}
     _grpMain:insert(txtHighscore)
 
-    local scores
-    if composer.getVariable("score") == nil then
-        scores = {3500, 2300, 2000, 1100, 0, 0, 0, 0, 0, 0}
+    loadScores()
+    table.insert( scoresTable, composer.getVariable( "finalScore" ) )
+    composer.setVariable( "finalScore", 0 )
+    
+    local function compare( a, b )
+        return a > b
     end
+    table.sort( scoresTable, compare )
+
+    saveScores()
 
     local box = display.newImageRect(_grpMain, "assets/menu/highscorewindow.png", 200, 270)
     box.x, box.y = _CX, _CY + 40
-    for i = 1, #scores, 1 do
-        local txtScore = display.newText(scores[i], _CX, _CY-(50-(i*20)), "assets/fonts/Shadow of the Deads.ttf", 10)
+    for i = 1, 10 do
+        local txtScore = display.newText(scoresTable[i], _CX, _CY-(50-(i*20)), "assets/fonts/Shadow of the Deads.ttf", 10)
         txtScore.fill = {color.hex2rgb("#dba400")}
         _grpMain:insert(txtScore)
     end

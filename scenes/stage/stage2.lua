@@ -181,7 +181,7 @@ local function dead(x,y)
             transition.to(blood, {time = 500, x=toX, y=toY, alpha=0, rotation=180})
         end
     end
-    local temp_dead = 1
+    local temp_dead = 0
     for index, value in ipairs(enemies) do
         if value.isDead then
             temp_dead = temp_dead + 1
@@ -201,16 +201,13 @@ local function slashingsound()
     end
 end
 --skill functions
+
 local function megaslash()
     if hero.megaslashBool then
         hero.megaslash()
         skill.megaslash()
         for index, value in ipairs(enemies) do
-            --print( value.type .. " - " .. value.x .. " - " .. value.y)
-            --print( hero.x .. " - " .. hero.y)
-            --json.prettify( hero )
-            --json.prettify( enemies )
-            if value.type == "enemy" and value.isDead ~= true then
+            if value.name == "enemy" and value.isDead ~= true then
                 if hero.direction == "right" then
                     if value.x >= hero.x and value.x < hero.x+150  then
                         value:hurt(hero.damage*1.8)
@@ -221,7 +218,7 @@ local function megaslash()
                     end
                 end
                 if value.hp <= 0 then
-                    hero:kill(value.name)
+                    
                     dead(value.x, value.y)
                     value.isDead = true
                 end
@@ -230,56 +227,10 @@ local function megaslash()
     end
 end
 
-local function earthshatter()
-    if hero.earthshatterBool then
-        hero.earthshatter()
-        skill.earthshatter()
-        for index, value in ipairs(enemies) do
-            if value.type == "enemy" and value.isDead ~= true then
-                if hero.direction == "right" then
-                    if value.x >= hero.x + 90 and value.x < hero.x+190  then
-                        value:hurt(hero.damage*2)
-                    end
-                else
-                    if value.x <= hero.x - 90 and value.x > hero.x-190  then
-                        value:hurt(hero.damage*2)
-                    end
-                end
-                if value.hp <= 0 then
-                    hero:kill(value.name)
-                    dead(value.x, value.y)
-                    value.isDead = true
-                end
-            end
-        end
-    end
-    
+local function heal()
+    hero:heal()
 end
 
-local function omnislash()
-    if hero.omnislashBool then
-        hero.omnislash()
-        skill.omnislash()
-        for index, value in ipairs(enemies) do
-            if value.type == "enemy" and value.isDead ~= true then
-                if hero.direction == "right" then
-                    if value.x >= hero.x - 50 and value.x < hero.x+250  then
-                        value:hurt(hero.damage*2.5)
-                    end
-                else
-                    if value.x <= hero.x + 50 and value.x > hero.x-250  then
-                        value:hurt(hero.damage*2.5)
-                    end
-                end
-                if value.hp <= 0 then
-                    hero:kill(value.name)
-                    dead(value.x, value.y)
-                    value.isDead = true
-                end
-            end
-        end
-    end
-end
 --
 
 
@@ -306,17 +257,16 @@ function scene:create( event )
     local isMobile = ( "ios" == system.getInfo("platform") ) or ( "android" == system.getInfo("platform") )
     if isMobile or isSimulator then
         back = vjoy.newButton("assets/menu/setting.png" , "back", sceneGroup)
-        right = vjoy.newButton( 60, "right", sceneGroup )
-        left = vjoy.newButton( 60, "left" , sceneGroup)
+        right = vjoy.newButton( "assets/menu/right-arrow.png", "right", sceneGroup )
+        left = vjoy.newButton( "assets/menu/left-arrow.png", "left" , sceneGroup)
         attack = vjoy.newButton("assets/menu/attack-button.png", "attack", sceneGroup)
         jump = vjoy.newButton("assets/main-character/skills/jump.png", "jump", sceneGroup)
         dash = vjoy.newButton("assets/main-character/skills/dash.png", "dash", sceneGroup)
-        skill1 = vjoy.newButton("assets/main-character/skills/mega-slash.png", "skill1", sceneGroup)
+        skill1 = vjoy.newButton("assets/main-character/skills/megaslash.png", "skill1", sceneGroup)
         skill1.name = "megaslash"
-        skill2 = vjoy.newButton("assets/main-character/skills/earth-shatter-icon.png", "skill2", sceneGroup)
-        skill2.name = "earthshatter"
-        skill3 = vjoy.newButton("assets/main-character/skills/omnislash.png", "skill3", sceneGroup)
-        skill3.name = "omnislash"
+        skill2 = vjoy.newButton("assets/main-character/skills/heal.png", "skill2", sceneGroup)
+        skill2.name = "heal"
+        skill3 = vjoy.newButton("assets/main-character/skills/locked.png", "skill3", sceneGroup)
         skill4 = vjoy.newButton("assets/main-character/skills/locked.png", "skill4", sceneGroup)
         skill5 = vjoy.newButton("assets/main-character/skills/locked.png", "skill5", sceneGroup)
         --position
@@ -332,7 +282,7 @@ function scene:create( event )
         right.x, right.y = display.screenOriginX + 130, display.screenOriginY + display.contentHeight - 40
         left.x, left.y =  display.screenOriginX + 70,display.screenOriginY + display.contentHeight - 40  
         --scale
-        back.xScale, back.yScale = 0.4, 0.4
+        back.xScale, back.yScale = 1, 1
         jump.xScale, jump.yScale = 0.8, 0.8
         dash.xScale, dash.yScale = 0.8, 0.8
         skill1.xScale, skill1.yScale = 0.8, 0.8
@@ -415,28 +365,19 @@ function scene:create( event )
         if event.phase == "up" and not world.pause then
             if event.keyName == "attack" or event.keyName == "t" then
                 for index, value in ipairs(enemies) do
-                    --print( value.type .. " - " .. value.x .. " - " .. value.y)
-                    --print( hero.x .. " - " .. hero.y)
-                    json.prettify( hero )
-                    json.prettify( enemies )
-                    if value.type == "enemy" and value.isDead ~= true then
+                    if value.name == "enemy" and value.isDead ~= true then
                         if hero.direction == "right" then
                             if value.x >= hero.x and value.x < hero.x+120  then
                                 slashingsound()
-                                print("damage" .. hero.damage)
-                                print("level" .. hero.level)
                                 value:hurt(hero.damage)
                             end
                         else
                             if value.x <= hero.x and value.x > hero.x-120  then
                                 slashingsound()
-                                print("damage" .. hero.damage)
-                                print("level" .. hero.level)
                                 value:hurt(hero.damage)
                             end
                         end
                         if value.hp <= 0 then
-                            hero:kill(value.name)
                             dead(value.x, value.y)
                             value.isDead = true
                         end
@@ -448,32 +389,17 @@ function scene:create( event )
                 print(hero.direction)
                 if skill1.name == "megaslash"  then
                     megaslash()
-                elseif skill1.name == "omnislash" then
-                    omnislash()
-                elseif skill1.name == "earthshatter" then
-                    earthshatter()
+                    skill1:onCD()
                 end
             end
             if event.keyName == "skill2" or event.keyName == "t" then
-                print(hero.direction)
-                if skill2.name == "megaslash" then
-                    megaslash()
-                elseif skill2.name == "omnislash" then
-                    omnislash()
-                elseif skill2.name == "earthshatter" then
-                    earthshatter()
+                print(hero.hp)
+                if skill2.name == "heal"  then
+                    heal()
+                    skill2:onCD()
                 end
             end
-            if event.keyName == "skill3" or event.keyName == "t" then
-                print(hero.direction)
-                if skill3.name == "megaslash" then
-                    megaslash()
-                elseif skill3.name == "omnislash" then
-                    omnislash()
-                elseif skill3.name == "earthshatter" then
-                    earthshatter()
-                end
-            end
+            
             if event.keyName == "back" or event.keyName == "escape" then
                 print(world.pause)
                 if world.pause then
@@ -493,7 +419,13 @@ function scene:create( event )
 end
 
 local function enterFrame(event)
-   
+    if hero.healBool then
+        skill2:offCD()
+    end
+    if hero.megaslashBool then
+        skill1:offCD()
+    end
+    
     if hero.x < 3960 then
         local hx, hy = hero:localToContent(0, -100)
         hx, hy = _CX/2 - hx, _CY - hy
@@ -514,8 +446,6 @@ end
 function scene:hide( event )
     
     if ( event.phase == "will" ) then
-        hero:removeSelf()
-        world = nil
     elseif ( event.phase == "did" ) then
         Runtime:removeEventListener("enterFrame", enterFrame)
         Runtime:removeEventListener( "key", key )

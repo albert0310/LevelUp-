@@ -57,7 +57,7 @@ function M.new(Hero,world)
     --properties
     Hero.isHero = true
     Hero.isVisible = true
-    local experience = 80
+    local experience = 0
     local max_experience = 100
     Hero.dashBool = true
     Hero.dashCD = 400
@@ -65,16 +65,32 @@ function M.new(Hero,world)
     Hero.level = 1
     Hero.maxHP = 150
     Hero.hp = 150
-    Hero.armor = 5
+    Hero.armor = 1
     Hero.damage = 25
     Hero.name = "hero"
+    local x, y = Hero.x, Hero.y
+
+    --Skill Properties
     Hero.megaslashCD = 7
     Hero.megaslashBool = true
     Hero.earthshatterCD = 10
     Hero.earthshatterBool = true
     Hero.omnislashCD = 15
     Hero.omnislashBool = true
-	local x, y = Hero.x, Hero.y
+    Hero.crescentslashCD = 5
+    Hero.crescentslashBool = true
+    Hero.healCD = 17
+    Hero.healBool = true
+	Hero.lifestealCD = 25
+    Hero.lifestealBool = true
+    Hero.lifestealActiveCD = 10
+    Hero.lifestealActive = false
+    Hero.imunityCD = 20
+    Hero.imunityBool = true
+    Hero.imunityActiveCD = 5
+    Hero.imunityActive = false
+    
+
     --movement
     local max, acceleration, left, right, flip = 150, 750, 0, 0, 0
     local lastMovement = {}
@@ -134,10 +150,6 @@ function M.new(Hero,world)
                     att_times = 0
                 end
             end
-            if event.keyName == "skill1" or event.keyName == "1" then
-                
-                Hero.isAttacking = true
-            end
             if right == 0 and left == 0 and not Hero.jumping then
                 Hero:play()
             end
@@ -168,38 +180,67 @@ function M.new(Hero,world)
 		end
 	end
 
-    function Hero:kill(enemy)
+    function Hero:gainExp(enemy, multiplier)
+        print(multiplier .. "multiplier")
         if enemy == "pocong" then
-            experience = experience + 20
+            experience = experience + (20 + 20 * multiplier) 
         elseif enemy == "kuyang" then
-            experience = experience + 25
+            experience = experience + (35 + 35 * multiplier)
         elseif enemy == "sundel" then
-            experience = experience + 30
+            experience = experience + (50 + 50 * multiplier)
         else
-            experience = experience + 50
+            experience = experience + (75 + 75 * multiplier)
         end
         if experience >= max_experience then
             Hero.level = Hero.level + 1   
             if experience > max_experience then
-                experience = experience - max_experience
+                experience = math.abs(experience - max_experience)
             end
-            max_experience = max_experience + (max_experience*0.175)
-            Hero.damage = Hero.damage + (Hero.damage * 0.2)
-            Hero.armor = Hero.armor + (Hero.armor * 0.1)
+            max_experience = max_experience + math.floor(max_experience*multiplier)
+            print(max_experience .. "maxEXP")
+            Hero.damage = Hero.damage + math.floor(Hero.damage * 0.1)
+            Hero.armor = Hero.armor +  math.floor(Hero.armor * 0.08)
+            Hero.maxHP = Hero.maxHP +  math.floor(Hero.maxHP * 0.1)
+            Hero.hp = Hero.hp +  math.floor(Hero.maxHP * 0.15)
+            print(Hero.hp)
+            if Hero.hp > Hero.maxHP then
+                Hero.hp = Hero.maxHP
+            end
         end
     end
 
     function Hero:hurt(damage)
-        Hero.hp = Hero.hp - (damage - Hero.armor)
-        print("HP " .. Hero.hp)
-        if Hero.hp <= 0 then
-            fx.fadeOut( function()
-                composer.gotoScene( "scenes.menu")
-            end )
+        if not Hero.imunityActive then
+            print (Hero.hp .. ' - ' .. Hero.maxHP)
+            Hero.hp = Hero.hp - math.floor(math.max(1, damage - Hero.armor))
+            if parent.score then
+                if parent.player_death >= 3 then
+                    composer.setVariable("finalScore", parent.score)
+                    composer.gotoScene( "scenes.highscore")
+                else
+                    if Hero.hp <= 0 then
+                        Hero:resurect()
+                    end
+                end
+            end
+            if Hero.hp <= 0 then
+                fx.fadeOut( function()
+                    composer.gotoScene( "scenes.menu")
+                end )
+            end
+            
         end
     end
-    
+
+    function Hero:resurect()
+        parent.player_death = parent.player_death + 1
+        parent.decrease = true
+        Hero.hp = Hero.maxHP
+    end
+
     --function skills
+
+
     local function megaslashCDtick()
         Hero.megaslashCD = Hero.megaslashCD - 1
         if Hero.megaslashCD <= 0 then
@@ -239,6 +280,97 @@ function M.new(Hero,world)
         local tm = timer.performWithDelay(1000,omnislashCDtick,Hero.omnislashCD)
     end
 
+    local function crescentslashCDtick()
+        Hero.crescentslashCD = Hero.crescentslashCD - 1
+        if Hero.crescentslashCD <= 0 then
+             Hero.crescentslashCD = 5
+             Hero.crescentslashBool = true
+        end
+    end
+
+    function Hero:crescentslash()   
+        Hero.crescentslashBool = false
+        local tm = timer.performWithDelay(1000,crescentslashCDtick,Hero.crescentslashCD)
+    end
+
+    local function healCDtick()
+        -- print(Hero.healCD)
+        Hero.healCD = Hero.healCD - 1
+        if Hero.healCD <= 0 then
+             Hero.healCD = 17
+             Hero.healBool = true
+        end
+    end
+
+    function Hero:heal()
+        if Hero.healBool == true then
+            Hero.hp = Hero.hp + 25 + (math.floor(Hero.maxHP*0.05))
+            if Hero.hp > Hero.maxHP then
+                Hero.hp = Hero.maxHP
+            end
+            Hero.healBool = false
+            local tm = timer.performWithDelay(1000,healCDtick,Hero.healCD)
+        end
+    end
+
+    local function lifestealCDtick()
+        -- print(Hero.lifestealCD)
+        Hero.lifestealCD = Hero.lifestealCD - 1
+        if Hero.lifestealCD <= 0 then
+             Hero.lifestealCD = 17
+             Hero.lifestealBool = true
+        end
+    end
+    
+    local function lifestealActiveCDtick()
+        Hero.lifestealActiveCD = Hero.lifestealActiveCD - 1
+        if Hero.lifestealActiveCD <= 0 then
+             Hero.lifestealActiveCD = 10
+             Hero.lifestealActive = false
+        end
+    end
+
+    function Hero:lifesteal()
+        Hero.lifestealBool = false
+        Hero.lifestealActive = true
+        local tm = timer.performWithDelay( 1000, lifestealActiveCDtick , Hero.lifestealActiveCD )
+        local tm = timer.performWithDelay(1000,lifestealCDtick,Hero.lifestealCD)
+    end
+
+    function Hero:lifestealActivate()
+        if Hero.lifestealActive then
+            Hero.hp = Hero.hp + math.floor(Hero.damage * 0.1)
+
+            if Hero.hp > Hero.maxHP then
+                Hero.hp = Hero.maxHP
+            end
+        end
+    end
+    
+    local function imunityCDtick()
+        -- print(Hero.lifestealCD)
+        Hero.imunityCD = Hero.imunityCD - 1
+        if Hero.imunityCD <= 0 then
+             Hero.imunityCD = 17
+             Hero.imunityBool = true
+        end
+    end
+    
+    local function imunityActiveCDtick()
+        Hero.imunityActiveCD = Hero.imunityActiveCD - 1
+        if Hero.imunityActiveCD <= 0 then
+             Hero.imunityActiveCD = 10
+             Hero.imunityActive = false
+        end
+    end
+
+    function Hero:imunity()
+        Hero.imunityBool = false
+        Hero.imunityActive = true
+        local tm = timer.performWithDelay( 1000, imunityCDtick , Hero.imunityCD )
+        local tm = timer.performWithDelay(1000,imunityActiveCDtick,Hero.imunityActiveCD)
+    end
+
     --collision
     function Hero:collision(event)
         local other = event.other
@@ -254,14 +386,6 @@ function M.new(Hero,world)
                     self:setSequence("idle")
                 end
             end
-            --if self.isAttacking then
-            --    if event.contact.isTouching and event.other.type == "rectangle" then
-            --        event.other:removeSelf()
-            --        print(json.prettify(event))
-            --        self.isAttacking = false
-            --    end
-            --    
-            --end
         end
     end
     
@@ -276,15 +400,16 @@ function M.new(Hero,world)
                     Hero:applyForce(dx or 0, 0, Hero.x, Hero.y)
                 end
                 Hero.xScale = math.min(1, math.max(Hero.xScale + flip, -1))
-
                 if Hero.sequence == "attack-1" or Hero.sequence == "attack-2" or Hero.sequence == "attack-3" then
-                    Hero.timer = timer.performWithDelay( 200,function ()
-                        Hero:setSequence("idle")
-                        Hero:play()
+                    Hero.timer = timer.performWithDelay( 100,function ()
+                        if Hero then
+                            Hero:setSequence("idle")
+                            Hero:play()
+                        end
                     end )
-                end 
+                end     
                 if Hero.sequence == "dash" then
-                    Hero.timer = timer.performWithDelay( 200,function ()
+                    Hero.timer = timer.performWithDelay( 100,function ()
                         Hero:setSequence("idle")
                         Hero:play()
                     end )
