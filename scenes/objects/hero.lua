@@ -59,14 +59,18 @@ function M.new(Hero,world)
     Hero.isVisible = true
     local experience = 0
     local max_experience = 100
+    local max_experience_increase = 100
     Hero.dashBool = true
     Hero.dashCD = 400
     Hero.direction = "right"
     Hero.level = 1
     Hero.maxHP = 150
+    Hero.maxHP_increase = 50
     Hero.hp = 150
     Hero.armor = 1
+    Hero.armor_increase = 1
     Hero.damage = 25
+    Hero.damage_increase = 10
     Hero.name = "hero"
     local x, y = Hero.x, Hero.y
 
@@ -103,7 +107,7 @@ function M.new(Hero,world)
                 flip = -0.133
                 Hero.direction = "left"
             end
-            if event.keyName == "right" or event.keyName == "d" then 
+            if event.keyName == "mright" or event.keyName == "d" then 
                 right = acceleration
                 flip = 0.133
                 Hero.direction = "right"
@@ -133,7 +137,7 @@ function M.new(Hero,world)
                 left = 0
                 Hero:setSequence("idle")
             end
-			if "right" == event.keyName or "d" == event.keyName then
+			if "mright" == event.keyName or "d" == event.keyName then
                 right = 0 
                 Hero:setSequence("idle")
             end
@@ -196,13 +200,13 @@ function M.new(Hero,world)
             if experience > max_experience then
                 experience = math.abs(experience - max_experience)
             end
-            max_experience = max_experience + math.floor(max_experience*multiplier)
+            max_experience = max_experience + math.floor(max_experience_increase*multiplier)
             print(max_experience .. "maxEXP")
-            Hero.damage = Hero.damage + math.floor(Hero.damage * 0.1)
-            Hero.armor = Hero.armor +  math.floor(Hero.armor * 0.08)
-            Hero.maxHP = Hero.maxHP +  math.floor(Hero.maxHP * 0.1)
+            Hero.damage = Hero.damage + math.floor(Hero.damage_increase * 0.1)
+            Hero.armor = Hero.armor + (Hero.armor_increase * 0.08)
+            Hero.maxHP = Hero.maxHP +  math.floor(Hero.maxHP_increase * 0.1)
             Hero.hp = Hero.hp +  math.floor(Hero.maxHP * 0.15)
-            print(Hero.hp)
+            print(Hero.hp .. "HP + " .. Hero.damage .. "DMG + " .. Hero.armor .. " Armor")
             if Hero.hp > Hero.maxHP then
                 Hero.hp = Hero.maxHP
             end

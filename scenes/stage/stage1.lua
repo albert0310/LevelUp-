@@ -260,7 +260,7 @@ function scene:create( event )
     local isMobile = ( "ios" == system.getInfo("platform") ) or ( "android" == system.getInfo("platform") )
     if isMobile or isSimulator then
         back = vjoy.newButton("assets/menu/setting.png" , "back", sceneGroup)
-        right = vjoy.newButton( "assets/menu/right-arrow.png", "right", sceneGroup )
+        right = vjoy.newButton( "assets/menu/right-arrow.png", "mright", sceneGroup )
         left = vjoy.newButton( "assets/menu/left-arrow.png", "left" , sceneGroup)
         attack = vjoy.newButton("assets/menu/attack-button.png", "attack", sceneGroup)
         jump = vjoy.newButton("assets/main-character/skills/jump.png", "jump", sceneGroup)

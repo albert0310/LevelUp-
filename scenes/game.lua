@@ -33,6 +33,7 @@ timeSecond = 0
 local crescent
 local enemies = {}
 local enemy_total = 5
+local enemy_total_increase = 5
 local difficulty = 1
 local enemies = {}
 local bblood = composer.getVariable("bloodOnOff")
@@ -367,18 +368,18 @@ local function spawnEnemy(m)
     local enemytypes
     local chance
     enemies = {}
-    if difficulty < 8 then
+    if difficulty < 10 then
         enemytypes = {"pocong"}
         chance = {100}
-    elseif difficulty < 14  then
+    elseif difficulty < 15  then
         enemytypes = {"pocong", "kuyang"}
         chance = {75, 25}
-    elseif difficulty < 20 then
+    elseif difficulty < 25 then
         enemytypes = {"pocong", "kuyang", "buto"}
         chance = {40, 45, 15}
     else
         enemytypes = {"pocong", "kuyang", "buto", "sundel"}
-        chance = {30, 30, 25, 15}
+        chance = {30, 35, 20, 15}
     end
     for i = 1, enemy_total, 1 do
         local x = math.random(50, (terrain[1].width+terrain[2].width+terrain[3].width - 200))
@@ -405,7 +406,8 @@ end
 
 local function countDifficulty()
     print(difficulty .. "difficulty")
-    enemy_total = enemy_total + math.floor(difficulty/10)
+    enemy_total = enemy_total + math.floor(enemy_total_increase * difficulty/100)
+    print("enemy total : " .. enemy_total)
     local m = 0.01 * difficulty
     spawnEnemy(m)
 end
@@ -662,7 +664,7 @@ function scene:create( event )
     local isMobile = ( "ios" == system.getInfo("platform") ) or ( "android" == system.getInfo("platform") )
     if isMobile or isSimulator then
         back = vjoy.newButton("assets/menu/setting.png" , "back", sceneGroup)
-        right = vjoy.newButton( "assets/menu/right-arrow.png", "right", sceneGroup )
+        right = vjoy.newButton( "assets/menu/right-arrow.png", "mright", sceneGroup )
         left = vjoy.newButton( "assets/menu/left-arrow.png", "left" , sceneGroup)
         attack = vjoy.newButton("assets/menu/attack-button.png", "attack", sceneGroup)
         jump = vjoy.newButton("assets/main-character/skills/jump.png", "jump", sceneGroup)
