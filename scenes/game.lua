@@ -606,6 +606,7 @@ local function crescentslash()
     if hero.crescentslashBool then
         hero:setSequence("attack-2")
         hero:play()
+        hero.crescentslash()
         skill.crescentslash()
         for index, value in ipairs(enemies) do
             if value.name == "enemy" and value.isDead ~= true then
