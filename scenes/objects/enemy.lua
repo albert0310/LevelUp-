@@ -305,7 +305,7 @@ function M.new(Enemy, type, hero)
 	function Enemy:attack()
 		
 		if Enemy.isAttacking == false then
-			print(Enemy.type .. " - " .. Enemy.x .. " - " .. Enemy.y)
+			-- print(Enemy.type .. " - " .. Enemy.x .. " - " .. Enemy.y)
 			Enemy:setSequence("attack")
 			Enemy:play()
 			Enemy.timer = timer.performWithDelay( 600, function()

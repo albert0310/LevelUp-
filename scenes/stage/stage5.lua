@@ -375,7 +375,7 @@ function scene:create( event )
         skill1.name = "megaslash"
         skill2 = vjoy.newButton("assets/main-character/skills/heal.png", "skill2", sceneGroup)
         skill2.name = "heal"
-        skill3 = vjoy.newButton("assets/main-character/skills/earthshatter-icon.png", "skill3", sceneGroup)
+        skill3 = vjoy.newButton("assets/main-character/skills/earthshatter.png", "skill3", sceneGroup)
         skill3.name = "earthshatter"
         skill4 = vjoy.newButton("assets/main-character/skills/imunity.png", "skill4", sceneGroup)
         skill4.name = "imunity"

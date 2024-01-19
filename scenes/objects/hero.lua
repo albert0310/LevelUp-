@@ -38,9 +38,9 @@ function M.new(Hero,world)
     
     local sequenceData = {
         {name = "idle",sheet = idle_sheet, frames = {1,2,3,4,5}, time = 1000, loopCount = 0},
-        {name = "attack-1", sheet = attack_sheet, frames = {1, 2, 3, 4}, time = 150, loopCount = 1},
-        {name = "attack-2", sheet = attack_sheet, frames = {5, 6, 7}, time = 150, loopCount = 1},
-        {name = "attack-3", sheet = attack_sheet, frames = {8, 9, 10, 11}, time = 150, loopCount = 1},
+        {name = "attack-1", sheet = attack_sheet, frames = {1, 2, 3, 4}, time = 350, loopCount = 1},
+        {name = "attack-2", sheet = attack_sheet, frames = {5, 6, 7}, time = 350, loopCount = 1},
+        {name = "attack-3", sheet = attack_sheet, frames = {8, 9, 10, 11}, time = 350, loopCount = 1},
         {name = "walk", sheet = walk_sheet, frames = {1, 2, 3, 4}, time = 1000, loopCount = 0},
         {name = "dash", sheet = dash_sheet, frames = {1, 2}, time = 200, loopCount = 1},
         {name = "jump", sheet = jumping_sheet, frames = {1, 2, 3, 4}, time = 300, loopCount = 1},
@@ -99,6 +99,7 @@ function M.new(Hero,world)
     local max, acceleration, left, right, flip = 150, 750, 0, 0, 0
     local lastMovement = {}
     local att_times = 0
+    local attackpattern = {}
     local function key(event)
         if(event.phase == lastMovement.phase) and (event.keyName == lastMovement.keyName) then return false end
         if event.phase == "down" and not parent.pause then
@@ -124,12 +125,11 @@ function M.new(Hero,world)
             end
             if event.keyName == "attack" or event.keyName == "t" then
                 att_times = att_times + 1
-                Hero.isAttacking = true
-                if right > 0 then
-                    right = acceleration / 2
-                elseif left > 0 then
-                    left = acceleration/2
+                if att_times > 3 then
+                    att_times = 1
                 end
+                table.insert(attackpattern, att_times)
+                Hero.isAttacking = true
             end
         end
         if event.phase == "up" and not parent.pause then
@@ -142,17 +142,19 @@ function M.new(Hero,world)
                 Hero:setSequence("idle")
             end
             if event.keyName == "attack" or event.keyName == "t" then
-                if att_times == 1 then
-                    Hero:setSequence("attack-1")
-                    Hero:play()
-                elseif att_times == 2 then
-                    Hero:setSequence("attack-2")
-                    Hero:play()
-                elseif att_times == 3 then
-                    Hero:setSequence("attack-3")
-                    Hero:play()
-                    att_times = 0
-                end
+                -- if att_times == 1 then
+                --     Hero:setSequence("attack-1")
+                --     Hero:play()
+                -- elseif att_times == 2 then
+                --     Hero:setSequence("attack-2")
+                --     Hero:play()
+                -- elseif att_times == 3 then
+                --     Hero:setSequence("attack-3")
+                --     Hero:play()
+                --     att_times = 0
+                -- end
+                
+                Hero:playAttSeq()
             end
             if right == 0 and left == 0 and not Hero.jumping then
                 Hero:play()
@@ -165,6 +167,50 @@ function M.new(Hero,world)
     
     
     --functions
+    local function onAttackComplete(event)
+        local currentSequence = event.target.sequence
+        local currentIndex = 0
+        for i, name in ipairs(attackpattern) do
+            if name == currentSequence then
+                currentIndex = i
+                break
+            end
+        end
+        print(currentIndex)
+        if currentIndex < #attackpattern then
+            -- Play the next attack animation in the sequence
+            local nextAttack = "attack-" .. attackpattern[currentIndex + 1]
+            event.target:setSequence(nextAttack)
+            event.target:play()
+        else
+            print("All attack animations completed!")
+            Hero:setSequence("idle")
+            -- You can perform additional actions here after the entire sequence is done
+        end
+    end
+
+    local function spriteListener( event )
+ 
+        local thisSprite = event.target  -- "event.target" references the sprite
+     
+        if ( event.phase == "ended" ) then 
+            print(Hero.sequence)
+            Hero:playAttSeq()
+        end
+    end
+
+    function Hero:playAttSeq()
+        print("wooooo")
+        print(#attackpattern)
+        print(json.prettify(attackpattern))
+        if attackpattern[1] then
+            Hero:setSequence("attack-"..table.remove(attackpattern,1))
+            Hero:play()
+        end
+    end
+
+    Hero:addEventListener("sprite", spriteListener)
+
     function Hero:dash()
         if not self.dashhing then
             if self.xScale > 0 then self:applyLinearImpulse( 120, 0)
@@ -185,7 +231,7 @@ function M.new(Hero,world)
 	end
 
     function Hero:gainExp(enemy, multiplier)
-        print(multiplier .. "multiplier")
+        --print(multiplier .. "multiplier")
         if enemy == "pocong" then
             experience = experience + (20 + 20 * multiplier) 
         elseif enemy == "kuyang" then
@@ -201,12 +247,12 @@ function M.new(Hero,world)
                 experience = math.abs(experience - max_experience)
             end
             max_experience = max_experience + math.floor(max_experience_increase*multiplier)
-            print(max_experience .. "maxEXP")
-            Hero.damage = Hero.damage + math.floor(Hero.damage_increase * 0.1)
-            Hero.armor = Hero.armor + (Hero.armor_increase * 0.08)
-            Hero.maxHP = Hero.maxHP +  math.floor(Hero.maxHP_increase * 0.1)
+            --print(max_experience .. "maxEXP")
+            Hero.damage = Hero.damage + math.floor(Hero.damage_increase * multiplier * 0.1)
+            Hero.armor = Hero.armor + (Hero.armor_increase * multiplier * 0.05)
+            Hero.maxHP = Hero.maxHP +  math.floor(Hero.maxHP_increase * multiplier * 0,1)
             Hero.hp = Hero.hp +  math.floor(Hero.maxHP * 0.15)
-            print(Hero.hp .. "HP + " .. Hero.damage .. "DMG + " .. Hero.armor .. " Armor")
+            --print(Hero.hp .. "HP + " .. Hero.damage .. "DMG + " .. Hero.armor .. " Armor")
             if Hero.hp > Hero.maxHP then
                 Hero.hp = Hero.maxHP
             end
@@ -215,7 +261,7 @@ function M.new(Hero,world)
 
     function Hero:hurt(damage)
         if not Hero.imunityActive then
-            print (Hero.hp .. ' - ' .. Hero.maxHP)
+            -- print (Hero.hp .. ' - ' .. Hero.maxHP)
             Hero.hp = Hero.hp - math.floor(math.max(1, damage - Hero.armor))
             if parent.score then
                 if parent.player_death >= 3 then
@@ -404,14 +450,14 @@ function M.new(Hero,world)
                     Hero:applyForce(dx or 0, 0, Hero.x, Hero.y)
                 end
                 Hero.xScale = math.min(1, math.max(Hero.xScale + flip, -1))
-                if Hero.sequence == "attack-1" or Hero.sequence == "attack-2" or Hero.sequence == "attack-3" then
-                    Hero.timer = timer.performWithDelay( 100,function ()
-                        if Hero then
-                            Hero:setSequence("idle")
-                            Hero:play()
-                        end
-                    end )
-                end     
+                -- if Hero.sequence == "attack-1" or Hero.sequence == "attack-2" or Hero.sequence == "attack-3" then
+                --     Hero.timer = timer.performWithDelay( 100,function ()
+                --         if Hero then
+                --             Hero:setSequence("idle")
+                --             Hero:play()
+                --         end
+                --     end )
+                -- end     
                 if Hero.sequence == "dash" then
                     Hero.timer = timer.performWithDelay( 100,function ()
                         Hero:setSequence("idle")
@@ -435,7 +481,7 @@ function M.new(Hero,world)
         if Hero.timer then
 			timer.cancel(Hero.timer)
 		end
-        print("hilang kan")
+        -- print("hilang kan")
 		Hero:removeEventListener( "collision" )
 		Runtime:removeEventListener( "enterFrame", enterFrame )
 		Runtime:removeEventListener( "key", key )

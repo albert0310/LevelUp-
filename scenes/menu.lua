@@ -87,7 +87,7 @@ function scene:create( event )
     btnLead:addEventListener("tap", gotoHighScore)
     btnSettings:addEventListener("tap", gotoSetting)
 
-    musicTrack = audio.loadStream( "assets/sound/backsound.wav")
+    musicTrack = audio.loadStream( "assets/sound/bgsound.mp3")
 end
 
 function scene:show( event )

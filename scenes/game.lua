@@ -28,7 +28,7 @@ local sceneGroup
 -- Set variables
 
 local terrain, terrainCount, spawnTerrain = {}, 1
-local world, hero, musuh, wall, BG, blockade, decor, healthbar, wave, skill, timeSecond
+local world, hero, musuh, wall, BG, blockade, decor, healthbar, wave, skill, timeSecond, background
 timeSecond = 0
 local crescent
 local enemies = {}
@@ -229,7 +229,7 @@ function table.contains(table, value)
 end
 
 local function removeSkillMenu()
-    print(_skillGroup.numChildren .. "sk")
+    -- print(_skillGroup.numChildren .. "sk")
     if _skillGroup.numChildren > 0 then
         for i = _skillGroup.numChildren , 1 , -1 do
             display.remove(_skillGroup[i])
@@ -242,7 +242,7 @@ end
 local function addDifficulty(rarity)
     if rarity == "common-skill.png" then
         difficulty = difficulty + 1    
-        print(difficulty .. "inside sk")
+        -- print(difficulty .. "inside sk")
     elseif rarity == "rare-skill.png" then
         difficulty = difficulty + 2
     else
@@ -396,8 +396,8 @@ local function spawnEnemy(m)
         musuh = enemy.new(musuh, temptipe, hero)
         musuh.x, musuh.y = x , terrain[1].y_start-100
         if m then
-            musuh.hp = musuh.hp + (musuh.hp * m + (musuh.hp * (difficulty*0.01)))
-            print(musuh.hp)
+            musuh.hp = musuh.hp + (musuh.hp * m )
+            -- print(musuh.hp)
             musuh.damage = musuh.damage + (musuh.damage * m)
         end
         table.insert(enemies, musuh)
@@ -405,7 +405,7 @@ local function spawnEnemy(m)
 end
 
 local function countDifficulty()
-    print(difficulty .. "difficulty")
+    print(difficulty .. " difficulty")
     enemy_total = enemy_total + math.floor(enemy_total_increase * difficulty/100)
     print("enemy total : " .. enemy_total)
     local m = 0.01 * difficulty
@@ -432,11 +432,8 @@ local function dead(x,y)
             temp_dead = temp_dead + 1
         end
     end
-    print(world.score .. " world.score")
-    print( temp_dead .. " - " .. #enemies)
-    if world.score % 25  == 0 and world.score > 0 then
-        difficulty = difficulty + 1
-    end
+    -- print( temp_dead .. " - " .. #enemies)
+    
     if temp_dead == #enemies then
         countDifficulty()
     end
@@ -451,6 +448,7 @@ end
 local function heroLeveledUp()
     lvlTxt.text = "Level " .. hero.level
     difficulty = difficulty + 1
+    print( "level : " .. hero.level)
     if countSkill < 5 then
         if hero.level%5 == 0 then
             createSkillmenu()
@@ -466,9 +464,7 @@ local function decreaseDiff()
     local m = 0.01 * difficulty
     for index, musuh in ipairs(enemies) do
         musuh.hp = musuh.hp - (musuh.hp * m + (musuh.hp * (difficulty*0.01)))
-        print(musuh.hp)
         musuh.damage = musuh.damage - (musuh.damage * m)
-        print("new health " .. musuh.hp .. ' - ' .. musuh.damage)
     end
 end
 
@@ -482,6 +478,7 @@ local function updateTime( event )
     timerTxt.text = timeDisplay
     if timeSecond % 30 == 0 and timeSecond > 0 then
         difficulty = difficulty + 1
+        print( "diff : " .. difficulty .. " score :  " .. world.score .. " level : " .. hero.level .. " enemytotal : " .. enemy_total)
     end
     liveTxt.text = ( 3 - world.player_death) .. "X"
     if world.decrease then
@@ -499,6 +496,10 @@ local function addScore(type)
         world.score = world.score + 15
     elseif type == "sundel" then
         world.score = world.score + 20
+    end
+    if world.score % 25  == 0 and world.score > 0 then
+        --print( "skor : " .. world.score)
+        difficulty = difficulty + 1
     end
 end
 
@@ -612,7 +613,6 @@ local function crescentslash()
             if value.name == "enemy" and value.isDead ~= true then
                 if hero.direction == "right" then
                     if value.x >= hero.x  and value.x < hero.x+250  then
-                        print("waa")
                         value:hurt(hero.damage*0.5)
                     end
                 else
@@ -648,8 +648,9 @@ function scene:create( event )
     _skillGroup = display.newGroup()
 
     BG = display.newGroup()
-    local background = display.newRect(BG , _CX, _CY,  display.pixelWidth, display.pixelHeight)
-    background.fill =  {color.hex2rgb("191c54")}
+    background = display.newImageRect(BG, "assets/background/forest/forest.jpg", _CX, _CY)
+    background.x, background.y = _CX, _CY
+    background.width, background.height = 1000, 550
     sceneGroup:insert(BG)
 
     world = display.newGroup()
@@ -906,7 +907,7 @@ function scene:create( event )
             end
 
             if event.keyName == "back" or event.keyName == "escape" then
-                print(world.pause)
+                -- print(world.pause)
                 if world.pause then
                     removepauseMenu()
                 else
@@ -1051,6 +1052,7 @@ local function enterFrame(event)
         local hx, hy = hero:localToContent(0, -100)
         hx, hy = _CX/2 - hx, _CY - hy
         world.x, world.y = world.x + hx, world.y + hy
+        background.x = background.x + (hx/45)
     end
     
 end
@@ -1067,6 +1069,7 @@ function scene:hide( event )
         
     elseif ( event.phase == "did" ) then
         Runtime:removeEventListener("enterFrame", enterFrame)
+        print( "score : " .. world.score)
     end
 end
 
